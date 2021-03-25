@@ -1,0 +1,475 @@
+@
+@    Mecrisp-Stellaris - A native code Forth implementation for ARM-Cortex M microcontrollers
+@    Copyright (C) 2013  Matthias Koch
+@
+@    This program is free software: you can redistribute it and/or modify
+@    it under the terms of the GNU General Public License as published by
+@    the Free Software Foundation, either version 3 of the License, or
+@    (at your option) any later version.
+@
+@    This program is distributed in the hope that it will be useful,
+@    but WITHOUT ANY WARRANTY; without even the implied warranty of
+@    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+@    GNU General Public License for more details.
+@
+@    You should have received a copy of the GNU General Public License
+@    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+@
+
+;------------------------------------------------------------------------------
+This is the first experimental release of Mecrisp-Stellaris,
+a port of Mecrisp to the ARM Cortex M architecture.
+
+It runs out of the box on LM4F120H5QR chips.
+
+http://mecrisp.sourceforge.net/
+
+m-atthias@users.sf.net
+;------------------------------------------------------------------------------
+
+Mecrisp finally got a younger sister and mastered the jump
+to the ARM Cortex M Thumb-2 instruction set.
+
+They share most of the design ideas, so Mecrisp-Stellaris can compile 
+directly into Flash, generates native code with constant folding and
+inlining of short words. 
+
+Communication is via serial 115200 baud 8N1 over UART0.
+
+Flashing is possible with lm4flash:
+https://github.com/utzig/lm4tools
+
+Assembling is done with the GCC-Arm-Embedded toolchain:
+https://launchpad.net/gcc-arm-embedded/
+
+
+Differences to stable Mecrisp for MSP430 are:
+
+* Experimental code ! Be brave, but expect monsters around the corner.
+
+* Unicode support is postponed for next release.
+
+* Interrupt handling will come soon...
+
+* Comfortable hardware support as for analog input is on the way.
+   You can contribute your favourite hardware handling routines 
+   to be included in upcoming releases !
+
+* Mecrisp-Stellaris for now has no double-number support, if you wish for it,
+   feel free to ask me to implement it !
+
+* It still includes some German debug messages that will disappear soon...
+
+* Source is for German speaking tounges only, but translations will follow
+   later if everything proves to be fine. For design ideas, have a look
+   into Mecrisp for MSP430 !
+
+
+;------------------------------------------------------------------------------
+Here comes a word list,
+  with short descriptions of all currently included words:
+View it with fixed-width font !
+;------------------------------------------------------------------------------
+
+;------------------------------------------------------------------------------
+; Terminal-IO
+;------------------------------------------------------------------------------
+
+        ?key            ( -- Flag ) Checks if a key is waiting
+        key             ( -- Char ) Waits for and fetches the pressed key
+        emit            ( Char -- ) Emits a character.
+
+;------------------------------------------------------------------------------
+; Stack Jugglers  (exactly ANS, some logical extensions)
+;------------------------------------------------------------------------------
+
+Single-Jugglers:
+
+        depth           ( -- +n ) Gives number of single-cell stack items.
+        nip             ( x1 x2 -- x2 )
+        drop            ( x -- )
+        rot             ( x1 x2 x3 -- x2 x3 x1 )
+        -rot            ( x1 x2 x3 -- x3 x1 x2 )
+        swap            ( x1 x2 -- x2 x1 )
+        tuck            ( x1 x2 -- x2 x1 x2 )
+        over            ( x1 x2 -- x1 x2 x1 )
+        ?dup            ( x -- 0 | x x )
+        dup             ( x -- x x )
+        pick            ( ... xi+1 xi ... x1 x0 i -- ... x1 x0 xi )
+                                  Picks one element from deep below
+
+        >r              ( x -- ) (R: -- x )
+        r>              ( -- x ) (R: x -- )
+        r@              ( -- x ) (R: x -- x )
+
+;------------------------------------------------------------------------------
+; Logic  (exactly ANS, some logical extensions)
+;------------------------------------------------------------------------------
+
+        arshift         ( x1 u -- x2 ) Arithmetric right-shift of u bit-places
+        rshift          ( x1 u -- x2 ) Logical right-shift of u bit-places
+        lshift          ( x1 u -- x2 ) Logical  left-shift of u bit-places
+        shr             ( x1 -- x2 )   Logical right-shift of one bit-place
+        shl             ( x1 -- x2 )   Logical  left-shift of one bit-place
+        bic             ( x1 x2 -- x3 ) Bit clear, identical to "not and"
+        not             ( x1 -- x2 )   Invert all bits
+        xor             ( x1 x2 -- x3 ) Bitwise Exclusive-OR
+        or              ( x1 x2 -- x3 ) Bitwise OR
+        and             ( x1 x2 -- x3 ) Bitwise AND
+        clz             ( x1 -- u ) Count leading zeros
+        false           ( --  0 ) False-Flag
+        true            ( -- -1 ) True-Flag
+
+;------------------------------------------------------------------------------
+; Calculus for single numbers  (exactly ANS, some logical extensions)
+;------------------------------------------------------------------------------
+        u/mod           ( u1 u2 -- u3 u4 ) 32/32 = 32 rem 32 Division
+                                           u1 / u2 = u4 remainder u3
+        /mod            ( n1 n2 -- n3 n4 ) n1 / n2 = n4 rem n3
+        /               ( n1 n2 -- n3 ) n1 / n2 = n3
+        *               ( u1|n1 u2|n2 -- u3|n3 ) 32*32 = 32 Multiplication
+        min             ( n1 n2 -- n1|n2 ) Keeps smaller of top two items
+        max             ( n1 n2 -- n1|n2 ) Keeps greater of top two items
+        umin            ( u1 u2 -- u1|u2 ) Keeps unsigned smaller
+        umax            ( u1 u2 -- u1|u2 ) Keeps unsigned greater
+        2-              ( u1|n1 -- u2|n2 ) Subtracts two, optimized
+        1-              ( u1|n1 -- u2|n2 ) Subtracts one, optimized
+        2+              ( u1|n1 -- u2|n2 ) Adds two, optimized
+        1+              ( u1|n1 -- u2|n2 ) Adds one, optimized
+        even            ( u1|n1 -- u2|n2 ) Makes even. Adds one if uneven.
+        2*              ( n1 -- n2 ) Arithmetric  left-shift
+        2/              ( n1 -- n2 ) Arithmetric right-shift
+        abs             ( n -- u ) Absolute value
+        negate          ( n1 -- n2 ) Negate
+        -               ( u1|n1 u2|n2 -- u3|n3 ) Subtraction
+        +               ( u1|n1 u2|n2 -- u3|n3 ) Addition
+
+;------------------------------------------------------------------------------
+; Comparisions  (exactly ANS, some logical extensions)
+;------------------------------------------------------------------------------
+
+        u<=             ( u1 u2 -- flag )  Unsigned comparisions
+        u>=             ( u1 u2 -- flag )
+        u>              ( u1 u2 -- flag )
+        u<              ( u1 u2 -- flag )
+        <=              ( n1 n2 -- flag )    Signed comparisions
+        >=              ( n1 n2 -- flag )
+        >               ( n1 n2 -- flag )
+        <               ( n1 n2 -- flag )
+        0<              ( n - flag )         Negative ?
+        0<>             ( x -- flag )
+        0=              ( x -- flag )
+        <>              ( x1 x2 -- flag )
+        =               ( x1 x2 -- flag )
+
+;------------------------------------------------------------------------------
+; Number base  (exactly ANS)
+;------------------------------------------------------------------------------
+
+        binary          ( -- ) Sets base to 2
+        decimal         ( -- ) Sets base to 10
+        hex             ( -- ) Sets base to 16
+        base            ( -- a-addr ) Base variable address
+
+;------------------------------------------------------------------------------
+; Memory access  (subtle differences to ANS, special cpu-specific extensions)
+;------------------------------------------------------------------------------
+
+Ram and ports:
+        move            ( c-addr1 c-addr2 u -- ) Moves u Bytes in Memory
+                        Caution with overlapping areas, as for now it moves
+                        in forward direction only.
+
+        cbit@           ( mask c-addr -- flag ) Test BIts in byte-location
+        hbit@           ( mask a-addr -- flag ) Test BIts in halfword-location
+        bit@            ( mask a-addr -- flag ) Test BIts in word-location
+
+Caution: The following work "fetch-modify-store" and are not interrupt-safe !
+
+        cxor!           ( mask c-addr -- ) Toggle bits in byte-location
+        hxor!           ( mask a-addr -- ) Toggle bits in halfword-location
+        xor!            ( mask a-addr -- ) Toggle bits in word-location
+
+        cbic!           ( mask c-addr -- ) Clear BIts in byte-location
+        hbic!           ( mask a-addr -- ) Clear BIts in halfword-location
+        bic!            ( mask a-addr -- ) Clear BIts in word-location
+
+        cbis!           ( mask c-addr -- ) Set BIts in byte-location
+        hbis!           ( mask a-addr -- ) Set BIts in halfword-location
+        bis!            ( mask a-addr -- ) Set BIts in word-location
+
+        constant  name  ( u|n -- )  Makes a single constant.
+        variable  name  ( n|n -- )  Makes an initialized single variable
+
+
+        @               ( a-addr -- u|n ) Fetches single number from memory
+        !               ( u|n a-addr -- ) Stores single number in memory
+        +!              ( u|n a-addr -- ) Add to memory location
+
+        h@              ( c-addr -- char ) Fetches halfword from memory
+        h+!             ( u|n a-addr -- ) Add to halfword memory location
+        h!              ( char c-addr ) Stores halfword in memory
+
+        c@              ( c-addr -- char ) Fetches byte from memory
+        c!              ( char c-addr ) Stores byte in memory
+        c+!             ( u|n a-addr -- ) Add to byte memory location
+
+Flash:
+        eraseflash      ( -- ) Erases everything. Clears Ram. Restarts Forth.
+        eraseflashfrom  ( a-addr -- ) Starts erasing at this address.
+                                      Clears Ram. Restarts Forth.
+
+        flashpageerase  ( a-addr -- ) Erase one 1k flash page only. Take care:
+                                      No Reset, no dictionary reinitialisation.
+
+        cflash!         ( char c-addr -- )  Writes byte to flash
+        hflash!         ( u|n a-addr -- )   Writes halfword to flash
+        flash!          ( u|n 4-a-addr -- ) Writes single number to flash, 
+                                              4 aligned !
+
+;------------------------------------------------------------------------------
+; Strings and beautiful output (subtle differences to ANS)
+;------------------------------------------------------------------------------
+
+String routines:
+        compare         ( cstr-addr-1 cstr-addr-2 -- flag )
+                        Compares two counted strings
+
+        type            ( cstr-addr -- )
+                        Prints a counted string.
+
+        s" Hello"       Compiles a string and
+                        ( -- cstr-addr )
+                        gives back its address when executed.
+
+        ." Hello"       Compiles a string and
+                        ( -- )
+                        prints it when executed.
+
+        bl              ( -- 32 ) ASCII code for Space
+        space           ( -- ) Emits space
+        cr              ( -- ) Emits line feed
+
+Pictured numerical output:
+        .digit          ( u -- char ) Converts a digit to a char
+        digit           ( char -- u ) Converts a char to a digit
+
+        number          ( Counted-String-Address -- 0 )
+                          cstr-addr              -- n 1 )
+                        Tries to convert a string to a number.
+
+        [char] *        Compiles code of following char
+                        ( -- char ) when executed
+
+        char *          ( -- char ) gives code of following char
+        hold            ( char -- ) Adds character to pictured number
+                                    output buffer from the front.
+
+        sign            ( n -- ) Add a minus sign to pictured number
+                                 output buffer, if n is negative
+
+        #S              ( ud1|d1 -- 0 0 ) Add all remaining digits
+                        from the double length number to output buffer
+        #               ( ud1|d1 -- ud2|d2 ) Add one digit from the
+                        double length number to output buffer
+        #>              ( ud|d -- cstr-addr )
+                        Drops double number and finishes
+                        pictured numeric output ready for type
+        <#              ( -- ) Prepare pictured number output buffer
+        u.              ( u -- ) Print unsigned single number
+        .               ( n -- ) Print single number
+
+Deep insights:
+        words           ( -- ) Prints list of defined words.
+        .s              ( many -- many ) Prints stack contents
+        dump            ( addr -- ) Dumps a bit of memory
+        hex.            ( u -- ) Prints 32 bit unsigned in hex base,
+                                 needs emit only.
+                                 This is independent of number subsystem.
+
+;------------------------------------------------------------------------------
+; User input and its interpretation (more FIG style, speciality!)
+;------------------------------------------------------------------------------
+
+        query           ( -- ) Fetches user input to input buffer
+        token           ( -- cstr-addr ) Cuts one token out of input buffer
+        parse           ( char -- cstr-addr )
+                        Cuts anything delimited by char out of input buffer
+
+        interpret       ( any -- any ) Execute, compile, fold, optimize...
+        quit            ( many -- ) (R: many -- ) Resets Stacks
+
+;------------------------------------------------------------------------------
+; Dictionary expansion  (speciality!)
+;------------------------------------------------------------------------------
+
+        ,               ( u|n -- ) Appends a single number to dictionary
+        ><,             ( u|n -- ) Reverses high and low-halfword, then 
+                                     appends it to dictionary
+        h,              ( u|n -- ) Appends a halfword to dictionary
+        c,              ( char -- ) Appends a byte to dictionary
+        align,          ( -- ) Makes Dictionary Pointer even, if uneven.
+        string,         ( cstr-addr -- ) Inserts a string without runtime
+        movwmovt,       ( x Register -- ) Generate a movw/movt-Sequence to
+                                          get x into given Register.
+        literal,        ( u|n -- ) Compiles a literal with runtime
+        inline,         ( a-addr -- ) Inlines the choosen subroutine
+        call,           ( a-addr -- ) Compiles a call to a subroutine
+        jump,           ( Hole-for-Opcode Destination ) 
+                        Writes an unconditional Jump
+                        to a-addr-Destination with the given Bitmask as
+                        Opcode into the halfword sized a-addr-Hole
+        cjump,          ( Hole-for-Opcode Destination Bitmask ) 
+                        Writes a conditional Jump
+                        to a-addr-Destination with the given Bitmask as
+                        Opcode into the halfword sized a-addr-Hole
+        ret,            ( -- ) Compiles a ret opcode
+        allot           ( n -- ) Tries to advance Dictionary Pointer by n bytes
+                                 Aborts, if not enough space available
+        here            ( -- a-addr|c-addr )
+                        Gives current position in Dictionary
+        dictionarystart ( -- a-addr ) Current entry point for dictionary search
+
+        compiletoram    ( -- ) Makes ram   the target for compiling
+        compiletoflash  ( -- ) Makes flash the target for compiling
+
+;------------------------------------------------------------------------------
+; Flags and inventory  (speciality!)
+;------------------------------------------------------------------------------
+
+        smudge          ( -- ) Makes current definition visible, burns
+                               collected flags to flash and
+                               takes care of proper ending
+        inline          ( -- ) Makes current definition inlineable.
+                               For flash, place it inside your definition !
+        immediate       ( -- ) Makes current definition immediate.
+                               For flash, place it inside your definition !
+        setflags        ( char -- ) Sets Flags with a mask. This isn't immediate,
+                               but for flash, place it inside your definition !
+        create name     ( -- ) Creates and links a new invisible dictionary
+                               header that does nothing.
+                               Use FIG-style <builds .. does> !
+        find            ( cstr-addr -- a-addr flags )
+                               Searches for a String in Dictionary.
+                               Gives back flags, which are different to ANS !
+
+        0-foldable      ( -- ) Current word becomes foldable with zero constants
+        1-foldable      ( -- ) Current word becomes foldable with one constants
+        2-foldable      ( -- ) Current word becomes foldable with two constants
+        3-foldable      ( -- ) Current word becomes foldable with 3   constants
+
+;------------------------------------------------------------------------------
+; Compiler essentials  (subtle differences to ANS)
+;------------------------------------------------------------------------------
+
+        execute         ( a-addr -- ) Calls subroutine
+        recurse         ( -- ) Lets the current definition call itself
+        ' name          ( -- a-addr ) Tries to find name in dictionary
+                                      gives back executable address
+        ['] name        ( -- a-addr)  Tick that compiles the executable address
+                                      of found word as literal
+        postpone name   ( -- ) Helps compiling immediate words.
+        does>           ( -- ) executes: ( -- a-addr )
+                               Gives address to where you have stored data.
+        <builds         ( -- ) Makes Dictionary header and reserves space
+                               for special call.
+        state           ( -- a-addr ) Address of state variable
+        ]               ( -- ) Switch to compile state
+        [               ( -- ) Switch to execute state
+        ;               ( -- ) Finishes new definition
+        : name          ( -- ) Opens new definition
+
+;------------------------------------------------------------------------------
+; Control structures (exactly ANS)
+;------------------------------------------------------------------------------
+Internally, they have complicated compile-time stack effects.
+
+Decisions:
+
+flag if ... then
+flag if ... else ... then
+
+        then            ( -- )           This is the common
+        else            ( -- )           flag if ... [else ...] then
+        if              ( flag -- )      structure.
+
+Case:
+
+n case
+     m1   of ... endof
+     m2   .. ... .....
+   flag  ?of ... endof
+    all others
+  endcase
+
+        case            ( n -- n )       Begins case structure
+        of              ( m -- )         Compares m with n, choose this if n=m
+        ?of             ( flag -- )      Flag-of, for custom comparisions
+        endof           ( -- )           End of one possibility
+        endcase         ( n -- )         Ends case structure, discards n
+
+Indefinite Loops:
+
+begin ... again
+begin ... flag until
+begin ... flag while ... repeat
+
+        repeat          ( -- ) Finish of a middle-flag-checking loop.
+
+        while           ( flag -- ) Check a flag in the middle of a loop
+
+        until           ( flag -- ) begin ... flag until
+                                    loops as long flag is true
+        again           ( -- )  begin ... again
+                                is an endless loop
+        begin           ( -- )
+
+
+Definite Loops:
+
+limit index   do ... [one or more leave(s)] ... loop
+             ?do ... [one or more leave(s)] ... loop
+              do ... [one or more leave(s)] ... n +loop
+             ?do ... [one or more leave(s)] ... n +loop
+
+
+        k               ( -- u|n ) Gives third  loop index
+        j               ( -- u|n ) Gives second loop index
+        i               ( -- u|n ) Gives innermost loop index
+
+
+        unloop          (R: old-limit old-index -- )
+                        Drops innermost loop structure,
+                        pops back old loop structures to loop registers
+
+        exit            ( -- ) Returns from current definition.
+                               Compiles a ret opcode.
+
+        leave           ( -- ) (R: old-limit old-index -- )
+                        Leaves current innermost loop promptly
+
+        +loop           ( u|n -- )
+                        (R: unchanged | old-limit old-index -- )
+                        Adds number to current loop index register
+                        and checks whether to continue or not
+
+        loop            ( -- )
+                        (R: unchanged | old-limit old-index -- )
+                        Increments current loop index register by one
+                        and checks whether to continue or not.
+
+        ?do             ( Limit Index -- )
+                        (R: unchanged | -- old-limit old-index )
+                        Begins a loop if limit and index are not equal
+
+        do              ( Limit Index -- )
+                        (R: -- old-limit old-index )
+                        Begins a loop
+
+;------------------------------------------------------------------------------
+; Hardware access
+;------------------------------------------------------------------------------
+  Coming soon...
+
+
+Matthias Koch, Summer 2013
