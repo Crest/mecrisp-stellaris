@@ -17,10 +17,13 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the sixth experimental release of Mecrisp-Stellaris,
+This is the seventh experimental release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
-It runs out of the box on LM4F120H5QR and STM32F407VGT6 chips.
+It runs out of the box on:
+  - TI Stellaris Launchpad       with LM4F120H5QR
+  - STM F4 Discovery             with STM32F407VGT6 
+  - Freescale Freedom FRDM-KL25Z with KL25Z128VLK4
 
 http://mecrisp.sourceforge.net/
 
@@ -35,8 +38,9 @@ directly into Flash, generates native code with constant folding and
 inlining of short words. 
 
 Communication is via serial 115200 baud 8N1 over
-  - UART0  in LM4F120 (connected to USB-serial bridge on Stellaris Launchpad)
-  - USART2 in STM32F4 (TX on PA2, RX on PA3)
+  - UART0  in LM4F120  (connected to USB-serial bridge on Stellaris Launchpad)
+  - USART2 in STM32F4  (TX on PA2, RX on PA3)
+  - UART0  in KL25Z128 (connected to USB-serial bridge on Freedom board)
 
 Hardware and configuration for LM4F120:
   Connect your cable to the Debug-USB-Port, 
@@ -65,6 +69,15 @@ Hardware and configuration for STM32F4:
   On startup, this runs with external 8 MHz crystal HSE clock,
   as internal oscillator is specified -8% + 4.5% over whole temp range.
 
+Hardware and configuration for KL25Z128:
+  Connect USB cable to SDA-USB-PORT
+
+  Flashing is via mass storage interface -
+    the board will appear as Flash Disk, just copy .srec file in.
+    Maybe you have to do an OpenSDA firmware update before.
+
+  On startup, this runs with internal FLL at 20.97 MHz. 
+
 
 Mecrisp-Stellaris itself is sending LF for line ending,
 but recognizes both LF and CR. Invoke Picocom with something like
@@ -90,28 +103,31 @@ Differences to stable Mecrisp for MSP430 are:
 * Mecrisp-Stellaris for now has no double-number support, if you wish for it,
    feel free to ask me to implement it !
 
-* Source is for German speaking tounges only, but translations will follow
-   later if everything proves to be fine. For design ideas, have a look
-   into Mecrisp for MSP430 !
+* For design ideas, have a look into Mecrisp for MSP430, too !
 
 * Chip specific source has added English comments and hints included
-    for simplify porting to other M3/M4 chips.
+    for simplify porting to other ARM Cortex-M chips.
 
 ;------------------------------------------------------------------------------
 ; Porting
 ;------------------------------------------------------------------------------
 
-Mecrisp-Stellaris can assemble without change for M3 and M4 cores.
+Mecrisp-Stellaris can assemble without change for M0, M3 and M4 cores.
 
 M0 cores lack conditional execution "ite eq...", which has to be circumvented 
 by conditional branches. stmdb psp!, {tos} is missing, which I use to push to 
 data stack and they have no division in hardware. 
 
-MSP430 has not, either, it will be perfectly possible, 
-but needs additional work on core to be done first.
+There is an assembler switch "m0core" to assemble the core with replacement 
+code for ARM Cortex-M0 chips. Depending on your flash capabilities, there are
+two useful switches: 
 
-Core needs about 10 kb flash at the moment, but reserves 16 kb for upcoming
-additions, and needs 1 kb RAM for stacks and buffers plus variables for 
+  "charkommaavailable" which is self-explaining and 
+  "emulated16bitflashwrites" if your particular Flash controller
+                             cannot write data in separate 16-Bit chunks.
+
+Core needs about 11 kb flash at the moment, but reserves 16 kb for upcoming
+additions, and needs 1.5 kb RAM for stacks and buffers plus variables for 
 interrupt handlers plus RAM dictionary space. Bare minimum for ARM to get it 
 running will be around 16kb/2kb, but to have fun with it and leave space for 
 real applications, go with at least of 32 kb flash and 4 kb RAM. 
@@ -123,6 +139,9 @@ one time per location, you can remove c, and align, without issues
 from the compiler, but 8-Bit flash writes are nice to have 
 for compatibility with standard code. 
 
+For special cases having only 4-aligned 32-bit one-time writes to Flash,
+there is a hflash! emulation layer.
+
 Flash erasing is only available for the user, it doesn't need erase cycles 
 while compiling. 
 
@@ -133,7 +152,7 @@ in assembly without libraries, and I will be there for your help.
 You have to change memory map, hardware initialisation and interrupt vectors,
 write ?key, key, emit for a first reaction and flash write access
 for final success. There is a common mimimum set of handlers across 
-M3/M4 CPUs, which will help you to get it running for the first time.
+ARM Cortex CPUs, which will help you to get it running for the first time.
 
 Unfortunately, there is a lot of bit twiddling necessary for peripherial 
 modules, as they differ a lot across manufacturers. ARMs seem to only share 
@@ -380,11 +399,7 @@ Deep insights:
         ><,             ( u|n -- ) Reverses high and low-halfword, then 
                                      appends it to dictionary
         h,              ( u|n -- ) Appends a halfword to dictionary
-        c,              ( char -- ) Appends a byte to dictionary
-        align,          ( -- ) Makes Dictionary Pointer even, if uneven.
         string,         ( cstr-addr -- ) Inserts a string without runtime
-        movwmovt,       ( x Register -- ) Generate a movw/movt-Sequence to
-                                          get x into given Register.
         literal,        ( u|n -- ) Compiles a literal with runtime
         inline,         ( a-addr -- ) Inlines the choosen subroutine
         call,           ( a-addr -- ) Compiles a call to a subroutine
@@ -405,6 +420,18 @@ Deep insights:
 
         compiletoram    ( -- ) Makes ram   the target for compiling
         compiletoflash  ( -- ) Makes flash the target for compiling
+
+  
+    Available depending on chip capabilities:
+
+        c,              ( char -- ) Appends a byte to dictionary
+        align,          ( -- ) Makes Dictionary Pointer even, if uneven.
+        align4,         ( -- ) Aligns on 4. M0 only
+
+        movwmovt,       ( x Register -- ) Generate a movw/movt-Sequence to
+                                          get x into given Register. M3/M4 only
+       registerliteral, ( x Register -- ) Generate a movs-lsls-adds... sequence 
+                                          to get x into given Register. M0 only
 
 ;------------------------------------------------------------------------------
 ; Flags and inventory  (speciality!)
@@ -607,5 +634,24 @@ Interrupts:
         irq-exti0
 
   Look into vectors.s and interrupts.s to add more interrupts.
+
+;------------------------------------------------------------------------------
+; Specials for KL25Z128:
+;------------------------------------------------------------------------------
+
+Flash:
+        eraseflash      ( -- ) Erases everything. Clears Ram. Restarts Forth.
+
+        eraseflashfrom  ( a-addr -- ) Starts erasing at this address.
+                                      Clears Ram. Restarts Forth.
+
+        flashpageerase  ( a-addr -- ) Erase one 1k flash page only. Take care:
+                                      No Reset, no dictionary reinitialisation.
+
+        hflash!         ( u|n a-addr -- )   Writes halfword to flash - emulated
+        flash!          ( u|n 4-a-addr -- ) Writes single number to flash, 
+                                              4 aligned !
+
+Interrupts are coming soon...
 
 Matthias Koch, Summer 2013

@@ -53,3 +53,10 @@
 
   - Bugfix in min and max
   - 1 Msps analog sampling example for STM
+
+24.08.2013, Matthias Koch, Mecrisp-Stellaris 0.7 experimental:
+
+  - New target: KL25Z128 on Freescale Freedom FRDM-KL25Z board
+  - Deep changes in core:
+    - New code generator for M0
+    - Improved code generator for M3

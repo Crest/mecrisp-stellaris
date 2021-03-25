@@ -17,14 +17,16 @@
 @
 
 @ Stackjongleure
+@ Stack jugglers
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "depth" @ ( -- Zahl der Elemente, die vorher auf den Datenstack waren )
+                                  @ ( -- Number of elements that have been on datastack before )
 @ -----------------------------------------------------------------------------
   @ Berechne den Stackfüllstand
-  ldr r1, =datenstackanfang @ Anfang laden
+  ldr r1, =datenstackanfang @ Anfang laden  Calculate stack fill gauge
   subs r1, psp @ und aktuellen Stackpointer abziehen
-  lsr r1, r1, #2 @ Durch 4 teilen
+  lsrs r1, #2 @ Durch 4 teilen  Divide through 4 Bytes/element.
   pushda r1
   bx lr
 
@@ -43,17 +45,25 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "?dup" @ ( x -- 0 | x x )
 @ -----------------------------------------------------------------------------
+  .ifdef m0core
+  cmp tos, #0
+  beq 1f
+  pushdatos
+1:bx lr
+
+  .else
   cmp tos, #0
   it ne
   stmdbne psp!, {tos}
   bx lr
+  .endif
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "swap" @ ( x y -- y x )
 @ -----------------------------------------------------------------------------
   ldr x, [psp]   @ Load X from the stack, no SP change.
   str tos, [psp] @ Replace it with TOS.
-  mov tos, x     @ And vice versa.
+  movs tos, x     @ And vice versa.
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -66,41 +76,67 @@
   Wortbirne Flag_foldable_2|Flag_inline, "over" @ ( x y -- x y x )
 @ -----------------------------------------------------------------------------
   ldr x, [psp]        @ Get X into a register.
-  stmdb psp!, {tos}   @ Flush cached TOS
-  mov tos, x          @ Copy X into TOS.
+  pushdatos           @ Flush cached TOS
+  movs tos, x          @ Copy X into TOS.
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "tuck" @ ( x1 x2 -- x2 x1 x2 )
 @ -----------------------------------------------------------------------------
-  ldm psp!, {w}     @ x1 in Register holen
-  stmdb psp!, {tos} @ x2 nochmal in den Stack
-  stmdb psp!, {w}   @ x1 wieder obenauf legen
+@  ldm psp!, {w}     @ x1 in Register holen
+@  stmdb psp!, {tos} @ x2 nochmal in den Stack
+@  stmdb psp!, {w}   @ x1 wieder obenauf legen
+@  bx lr
+
+  ldm psp!, {w}
+  subs psp, #8
+  str tos, [psp, #4]
+  str w, [psp]
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_3, "rot" @ ( x w y -- w y x )
 @ -----------------------------------------------------------------------------
-  ldm psp!, {w, x}    @ Get W and X into registers
-  stmdb psp!, {w}     @ These two instructions cannot be combined.
-  stmdb psp!, {tos}   @ (Order will be wrong.)
-  mov tos, x
+@  ldm psp!, {w, x}    @ Get W and X into registers
+@  stmdb psp!, {w}     @ These two instructions cannot be combined.
+@  stmdb psp!, {tos}   @ (Order will be wrong.)
+@  mov tos, x
+@  bx lr
+
+  ldm psp!, {w, x}
+  subs psp, #8
+  str w, [psp, #4]
+  str tos, [psp]
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_3, "-rot" @ ( x w y -- y x w )
 @ -----------------------------------------------------------------------------
-  ldm psp!, {w, x}    @ Get W and X into registers
-  stmdb psp!, {tos}   @ These two instructions cannot be combined.
-  stmdb psp!, {x}     @ (Order will be wrong.)
-  mov tos, w
+@  ldm psp!, {w, x}    @ Get W and X into registers
+@  stmdb psp!, {tos}   @ These two instructions cannot be combined.
+@  stmdb psp!, {x}     @ (Order will be wrong.)
+@  mov tos, w
+@  bx lr
+
+  ldm psp!, {w, x}
+  subs psp, #8
+  str tos, [psp, #4]
+  str x, [psp]
+  movs tos, w
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible|Flag_inline, "pick" @ ( xu .. x1 x0 u -- xu ... x1 x0 xu ) 
 @ -----------------------------------------------------------------------------
+  .ifdef m0core
+  lsls r0, tos, #2
+  ldr tos, [psp, r0]
+  bx lr
+  .else
   ldr tos, [psp, tos, lsl #2]  @ I love ARM. :-)
   bx lr
+  .endif
 
 @ Returnstack
 
@@ -114,13 +150,13 @@
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible|Flag_inline, "r>" @ Holt das zwischengespeicherte Element aus dem Returnstack zurück
 @------------------------------------------------------------------------------
-  stmdb psp!, {tos}
+  pushdatos
   pop {tos}
   bx lr
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible|Flag_inline, "r@" @ Kopiert das oberste Element des Returnstacks auf den Datenstack
 @------------------------------------------------------------------------------
-  stmdb psp!, {tos}
+  pushdatos
   ldr tos, [sp]
   bx lr

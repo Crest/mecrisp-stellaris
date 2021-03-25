@@ -17,17 +17,29 @@
 @
 
 @ Logikfunktionen
+@ Logic.
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_0|Flag_inline, "true" @ ( -- -1 )
 @ -----------------------------------------------------------------------------
+  .ifdef m0core
+  pushdatos
+  movs tos, #0
+  mvns tos, tos
+  .else
   pushdaconst -1
+  .endif
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_0|Flag_inline, "false" @ ( x -- 0 )
 @ -----------------------------------------------------------------------------
+  .ifdef m0core
+  pushdatos
+  movs tos, #0
+  .else
   pushdaconst 0
+  .endif
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -41,9 +53,16 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "bic" @ ( x1 x2 -- x1&~x2 )
 @ -----------------------------------------------------------------------------
+  .ifdef m0core
+  ldm psp!, {w}
+  bics w, tos
+  movs tos, w
+  bx lr
+  .else
   ldm psp!, {w}
   bics tos, w, tos
   bx lr
+  .endif
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "or" @ ( x1 x2 -- x1|x2 )
@@ -67,12 +86,38 @@
   mvns tos, tos
   bx lr
 
+
+  .ifdef m0core
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_foldable_1, "clz" @ ( x -- u )
+                        @ Counts leading zeroes in x.
+@ -----------------------------------------------------------------------------
+  movs r0, tos @ Fetch contents
+  beq 3f @ If TOS contains 0 we have 32 leading zeros.
+
+  movs tos, #0 @ No zeros counted yet.
+
+1:lsls r0, #1 @ Shift TOS one place
+  beq 2f @ Stop if register is zero.
+  bcs 2f @ Stop if an one has been shifted out.
+  adds tos, #1
+  b 1b
+
+2:bx lr
+
+3:movs tos, #32
+  bx lr
+
+  .else
+
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "clz" @ ( x -- u )
                         @ Counts leading zeroes in x.
 @ -----------------------------------------------------------------------------
   clz tos, tos
   bx lr
+
+  .endif
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_inline|Flag_foldable_1, "shr" @ ( x -- x' ) @ Um eine Stelle rechts schieben
@@ -90,23 +135,47 @@
   Wortbirne Flag_foldable_2|Flag_inline, "rshift" @ ( x n -- x' )
                            @ Shifts 'x' right by 'n' bits.
 @ -----------------------------------------------------------------------------
+
+  .ifdef m0core
+  ldm psp!, {w}
+  lsrs w, tos
+  movs tos, w
+  bx lr
+  .else
   ldm psp!, {w}   @ Get x into a register.
   lsrs tos, w, tos @ Shift by n into TOS.
   bx lr
+  .endif
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "arshift" @ ( x n -- x' )
                             @ Shifts 'x' right by 'n' bits, shifting in x's MSB.
 @ -----------------------------------------------------------------------------
+
+  .ifdef m0core
+  ldm psp!, {w}
+  asrs w, tos
+  movs tos, w
+  bx lr
+  .else
   ldm psp!, {w}   @ Get x into a register.
   asrs tos, w, tos @ Shift by n into TOS.
   bx lr
+  .endif
+
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "lshift" @ ( x n -- x' )
                            @ Shifts 'x' left by 'n' bits.
 @ -----------------------------------------------------------------------------
+
+  .ifdef m0core
+  ldm psp!, {w}
+  lsls w, tos
+  movs tos, w
+  bx lr
+  .else
   ldm psp!, {w}   @ Get x into a register.
   lsls tos, w, tos @ Shift by n into TOS.
   bx lr
- 
+  .endif

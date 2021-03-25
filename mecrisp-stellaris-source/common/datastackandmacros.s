@@ -18,38 +18,64 @@
 
 @ -----------------------------------------------------------------------------
 @ Registerdefinitionen
+@ Register definitions
 @ -----------------------------------------------------------------------------
 
 @ Helferlein-Register
+@ Temporary registers that are not saved
 w .req r0
 x .req r1
 y .req r2
+z .req r3
 
 @ Datenstack mit TOS im Register.
-@ Achtung: Diese Register sind recht fest eingebaut, nicht versuche, diese auszustauschen.
+@ Achtung: Diese Register sind recht fest eingebaut, nicht versuchen, diese auszustauschen.
+@ Datastack with TOS in register.
+@ Never change this registers as they are hardwired in some places.
 tos .req r6
 psp .req r7
 
 @ -----------------------------------------------------------------------------
 @ Datenstack-Makros
+@ Macros for Datastack
 @ -----------------------------------------------------------------------------
 
-.macro pushdaconst zahl
+.macro pushdatos @ Push TOS on Datastack - a common, often used factor.
+  .ifdef m0core
+  subs psp, #4
+  str tos, [psp]
+  .else
   stmdb psp!, {tos}
+  .endif
+.endm
+  
+
+.macro pushdaconst zahl @ Push small constant on Datastack
+  .ifdef m0core
+  pushdatos
+  ldr tos, =\zahl
+  .else
+  pushdatos
   movs tos, #\zahl
+  .endif
 .endm
 
-.macro pushdaconstw zahl
-  stmdb psp!, {tos}
+.macro pushdaconstw zahl @ Push bigger constant on Datastack
+  .ifdef m0core
+  pushdatos
+  ldr tos, =\zahl
+  .else
+  pushdatos
   movw tos, #\zahl
+  .endif
 .endm
 
-.macro pushda register
-  stmdb psp!, {tos}
-  mov tos, \register
+.macro pushda register @ Push register on Datastack
+  pushdatos
+  movs tos, \register
 .endm
 
-.macro popda register
+.macro popda register @ Pop register from Datastack
   mov \register, tos
   ldm psp!, {tos}
 .endm
@@ -59,7 +85,7 @@ psp .req r7
 .endm
 
 .macro dup
-  stmdb psp!, {tos}
+  pushdatos
 .endm
 
 .macro swap
@@ -74,12 +100,13 @@ psp .req r7
 .endm
 
 .macro r_from
-  stmdb psp!, {tos}
+  pushdatos
   pop {tos}
 .endm
 
 @ -----------------------------------------------------------------------------
 @ Flagdefinitionen
+@ Flag definitions
 @ -----------------------------------------------------------------------------
 
 .equ Flag_invisible,  0xFFFFFFFF
@@ -89,10 +116,10 @@ psp .req r7
 .equ Flag_inline,     0x00000020
 .equ Flag_immediate_compileonly, 0x30 @ Immediate + Inline
 
-.equ Flag_ramallot,   0x00000080
-.equ Flag_variable,   Flag_ramallot|1
+.equ Flag_ramallot,   0x00000080      @ Ramallot means that RAM is reserved and initialised by catchflashpointers for this definition on startup
+.equ Flag_variable,   Flag_ramallot|1 @ How many 32 bit locations shall be reserved ?
 
-.equ Flag_foldable,   0x00000040
+.equ Flag_foldable,   0x00000040 @ Foldable when given number of constants are available.
 .equ Flag_foldable_0, 0x00000040
 .equ Flag_foldable_1, 0x00000041
 .equ Flag_foldable_2, 0x00000042
@@ -104,9 +131,11 @@ psp .req r7
 
 @ -----------------------------------------------------------------------------
 @ Makros zum Bauen des Dictionary
+@ Macros for building dictionary
 @ -----------------------------------------------------------------------------
 
 @ Für initialisierte Variablen am Ende des RAM-Dictionary
+@ For initialised variables at the end of RAM-Dictioanary that are recognized by catchflashpointers
 .macro CoreVariable, Name @  Benutze den Mechanismus, um initialisierte Variablen zu erhalten.
   .set CoreVariablenPointer, CoreVariablenPointer - 4
   .equ \Name, CoreVariablenPointer
@@ -114,20 +143,28 @@ psp .req r7
 
 @ Für uninitialisierte Variablen am Anfang des RAMs
 @ Makro für die gemütliche Speicherreservierung
+@ For uninitialised variables at the beginning of RAM.
+@ Those are hardwired and not recognized by catchflashpointers, simply to not have to type their RAM addresses manually.
 .macro ramallot Name, Menge         @ Für Variablen und Puffer zu Beginn des Rams, die im Kern verwendet werden sollen.
   .equ \Name, rampointer            @ Uninitialisiert.
   .set rampointer, rampointer + \Menge
 .endm
 
-@ Pointer und Makros zum Aufbau des Dictionaries
-
+@ Makros zum Aufbau des Dictionaries
+@ Macro for building dictionary.
 .macro Wortbirne Flags, Name
-	.p2align 1        @ Auf gerade Adressen ausrichten
+
+      .ifdef m0core
+        .p2align 2        @ Auf 4 gerade Adressen ausrichten  Align to 4-even locations
+      .else
+        .p2align 1        @ Auf gerade Adressen ausrichten  Align to even locations
+      .endif
         .set Neu, .
-        .hword \Flags     @ Flags setzen, diesmal 2 Bytes ! Wir haben Platz und Ideen :-)
-        .word Latest      @ Link einfügen
+        .word Latest      @ Link einfügen  Insert Link
         .set Latest, Neu
-	.byte 8f - 7f     @ Länge des Namensfeldes berechnen
-7:	.ascii "\Name"    @ Namen anfügen
-8:	.p2align 1        @ 1 Bit 0 - Wieder gerade machen
+        .hword \Flags     @ Flags setzen, diesmal 2 Bytes ! Wir haben Platz und Ideen :-)  Flag field, 2 bytes, space for ideas left !
+
+	.byte 8f - 7f     @ Länge des Namensfeldes berechnen  Calculate length of name field
+7:	.ascii "\Name"    @ Namen anfügen  Insert name string
+8:	.p2align 1        @ 1 Bit 0 - Wieder gerade machen  Realign
 .endm

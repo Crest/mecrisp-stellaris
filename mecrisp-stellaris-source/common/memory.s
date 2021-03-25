@@ -17,10 +17,10 @@
 @
 
 @ Speicherzugriffe aller Art
-@ Wie beim MSP430 gewohnt nun auch interruptsicher :-)
+@ Memory access
 
 @------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "move"
+  Wortbirne Flag_visible, "move"  @ Forward move some bytes. This currently cannot cope with overlapping memory areas.
 move:  @ ( Quelladdr Zieladdr Byteanzahl -- )
        @ Kopiert einen Datensatz an eine neue Stelle.
        @ Kann noch nicht vorwärts und rückwärts kopieren, und so können sich die Speicherbereiche nicht überlappen.
@@ -29,8 +29,8 @@ move:  @ ( Quelladdr Zieladdr Byteanzahl -- )
   push {r0, r1, r2, r3, lr}
 
   popda r2 @ Count
-  popda r1 @ Zieladresse
-  popda r0 @ Quelladresse
+  popda r1 @ Zieladresse   Destination
+  popda r0 @ Quelladresse  Source
 
   cmp r2, #0      @ Prüfe, ob die Anzahl der zu kopierenden Bytes Null ist.
   beq.n move_fertig @ Wenn ja, bin ich fertig.
@@ -79,7 +79,7 @@ move_fertig:
 
 @ 
 
-/*
+/*  Tests...
 
 : create> <builds does> ;  create> Puffer 1 c, 2 c, 3 c, 4 c, 5 c,  puffer dump   puffer 1 +  puffer 2 + 2 move   puffer dump
 : create> <builds does> ;  create> Puffer 1 c, 2 c, 3 c, 4 c, 5 c,  puffer dump   puffer 1 +  puffer     2 move   puffer dump
@@ -99,7 +99,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   str w, [tos]     @ Popping both saves a cycle.
-  mov tos, x
+  movs tos, x
   bx lr
 
 
@@ -111,7 +111,7 @@ move_fertig:
   ldr y, [tos]       @ Load the current cell value
   adds y, w            @ Do the add
   str y, [tos]       @ Store it back
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -127,7 +127,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   strh w, [tos]     @ Popping both saves a cycle.
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -138,7 +138,7 @@ move_fertig:
   ldrh y, [tos]       @ Load the current cell value
   adds y, w            @ Do the add
   strh y, [tos]       @ Store it back
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -154,7 +154,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   strb w, [tos]     @ Popping both saves a cycle.
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -165,137 +165,161 @@ move_fertig:
   ldrb y, [tos]       @ Load the current cell value
   adds y, w            @ Do the add
   strb y, [tos]       @ Store it back
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "bis!" @ ( x 32-addr -- )
+  Wortbirne Flag_visible, "bis!" @ ( x 32-addr -- )  Set bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos] @ Alten Inhalt laden
   orrs y, w     @ Hinzuverodern
   str y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "bic!" @ ( x 32-addr -- )
+  Wortbirne Flag_visible, "bic!" @ ( x 32-addr -- )  Clear bits
   @ Löscht die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos] @ Alten Inhalt laden
   bics y, w     @ Bits löschen
   str y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "xor!" @ ( x 32-addr -- )
+  Wortbirne Flag_visible, "xor!" @ ( x 32-addr -- )  Toggle bits
   @ Wechselt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos] @ Alten Inhalt laden
   eors y, w     @ Bits umkehren
   str y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible|Flag_inline, "bit@" @ ( x 32-addr -- )
+  Wortbirne Flag_visible|Flag_inline, "bit@" @ ( x 32-addr -- )  Check bits
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}  @ Bitmaske holen
   ldr tos, [tos] @ Speicherinhalt holen
   ands tos, w    @ Bleibt nach AND etwas über ?
+
+  .ifdef m0core
+  beq 1f
+  movs tos, #0
+  mvns tos, tos
+1:bx lr
+  .else
   it ne
   movne tos, #-1 @ Bleibt etwas über, mache ein ordentliches true-Flag daraus.
   bx lr
+  .endif
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "hbis!" @ ( x 16-addr -- )
+  Wortbirne Flag_visible, "hbis!" @ ( x 16-addr -- )  Set bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrh y, [tos] @ Alten Inhalt laden
   orrs y, w     @ Hinzuverodern
   strh y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "hbic!" @ ( x 16-addr -- )
+  Wortbirne Flag_visible, "hbic!" @ ( x 16-addr -- )  Clear bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrh y, [tos] @ Alten Inhalt laden
   bics y, w     @ Hinzuverodern
   strh y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "hxor!" @ ( x 16-addr -- )
+  Wortbirne Flag_visible, "hxor!" @ ( x 16-addr -- )  Toggle bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrh y, [tos] @ Alten Inhalt laden
   eors y, w     @ Hinzuverodern
   strh y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible|Flag_inline, "hbit@" @ ( x 16-addr -- )
+  Wortbirne Flag_visible|Flag_inline, "hbit@" @ ( x 16-addr -- )  Check bits
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}  @ Bitmaske holen
   ldrh tos, [tos] @ Speicherinhalt holen
   ands tos, w    @ Bleibt nach AND etwas über ?
+
+  .ifdef m0core
+  beq 1f
+  movs tos, #0
+  mvns tos, tos
+1:bx lr
+  .else
   it ne
   movne tos, #-1 @ Bleibt etwas über, mache ein ordentliches true-Flag daraus.
   bx lr
+  .endif
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "cbis!" @ ( x 8-addr -- )
+  Wortbirne Flag_visible, "cbis!" @ ( x 8-addr -- )  Set bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrb y, [tos] @ Alten Inhalt laden
   orrs y, w     @ Hinzuverodern
   strb y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "cbic!" @ ( x 8-addr -- )
+  Wortbirne Flag_visible, "cbic!" @ ( x 8-addr -- )  Clear bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrb y, [tos] @ Alten Inhalt laden
   bics y, w     @ Hinzuverodern
   strb y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "cxor!" @ ( x 8-addr -- )
+  Wortbirne Flag_visible, "cxor!" @ ( x 8-addr -- )  Toggle bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrb y, [tos] @ Alten Inhalt laden
   eors y, w     @ Hinzuverodern
   strb y, [tos] @ Zurückschreiben
-  mov tos, x
+  movs tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible|Flag_inline, "cbit@" @ ( x 8-addr -- )
+  Wortbirne Flag_visible|Flag_inline, "cbit@" @ ( x 8-addr -- )  Check bits
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}  @ Bitmaske holen
   ldrb tos, [tos] @ Speicherinhalt holen
   ands tos, w    @ Bleibt nach AND etwas über ?
+
+  .ifdef m0core
+  beq 1f
+  movs tos, #0
+  mvns tos, tos
+1:bx lr
+  .else
   it ne
   movne tos, #-1 @ Bleibt etwas über, mache ein ordentliches true-Flag daraus.
   bx lr
+  .endif

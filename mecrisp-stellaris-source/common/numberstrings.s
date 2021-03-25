@@ -18,55 +18,64 @@
 
 @ Zahlenzauber enthält die Routinen für die Umwandlung von Zahlen in Strings und umgekehrt.
 @ Die Zahlenbasis kann maximal bis 36 gehen, danach fehlt einfach der Zeichensatz.
+@ Input and Output of numbers. Maximum base is 36.
 
 
 @ -----------------------------------------------------------------------------
-@ Zahleneingabe
+@ Zahleneingabe - Number input
 @ -----------------------------------------------------------------------------
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "digit" @ ( Zeichen -- false / Ziffer true )
-digit: @ Erwartet Base in r3
+digit:  @ ( c -- false / u true ) Converts a character into a digit.
 @ -----------------------------------------------------------------------------
   ldr r3, =base
   ldr r3, [r3]
   
-digit_base_r3:
-  subs tos, #48 @ "0" abziehen.
-  blo 5f        @ negativ --> Zeichen war "unter Null"
+digit_base_r3:  @ Erwartet Base in r3  Base has to be in r3 if you enter here.
+  subs tos, #48 @ "0" abziehen.  Subtract "0"
+  blo 5f        @ negativ --> Zeichen war "unter Null"  Negative ? --> Invalid character.
 
-  cmp tos, #10  @ Im Bereich bis "9" ?
-  blo 4f        @ Ziffer korrekt erkannt.
+  cmp tos, #10  @ Im Bereich bis "9" ?  In range up to "9" ?
+  blo 4f        @ Ziffer korrekt erkannt.  Digit recognized properly.
 
   @ Nein: Also ist die Ziffer nicht in den Zahlen 0-9 enthalten gewesen.
   @ Prüfe Buchstaben.
+  @ Character is a letter. 
 
-  subs tos, #7  @ Anfang der Großbuchstaben, "A"
-  cmp tos, #10  @ Buchstabenwerte beginnen bei 10
+  subs tos, #7  @ Anfang der Großbuchstaben, "A"   Beginning of capital letters "A"
+  cmp tos, #10  @ Buchstabenwerte beginnen bei 10  Values of letters start with 10
   blo 5f        @ --> Zeichen war ein Sonderzeichen zwischen Ziffern und Großbuchstaben.
+                @ --> Character has been a special one between numbers and capital letters.
 
-  cmp tos, #36  @ Es gibt 26 Buchstaben.
-  blo 4f        @ In dem Bereich: Ziffer korrekt erkannt.
+  cmp tos, #36  @ Es gibt 26 Buchstaben.  26 letters available.
+  blo 4f        @ In dem Bereich: Ziffer korrekt erkannt.  In this range ? Digit recognized properly.
 
   @ Für den Fall, dass die Ziffer immer noch nicht erkannt ist, probiere es mit den Kleinbuchstaben.
+  @ Try to recognize small letters.
 
-  subs tos, #32 @ Schiebe zum Anfang der Kleinbuchstaben, "A"
-  cmp tos, #10  @ Buchstabenwerte beginnen bei 10
+  subs tos, #32 @ Schiebe zum Anfang der Kleinbuchstaben, "a"  Beginning of small letters "a"
+  cmp tos, #10  @ Buchstabenwerte beginnen bei 10  Values of letters start with 10
   blo 5f        @ --> Zeichen war ein Sonderzeichen zwischen Großbuchstaben und Kleinbuchstaben.
+                @ --> Character has been a special one between small and capital letters.
 
-  cmp tos, #36  @ Es gibt 26 Buchstaben.
-  blo 4f        @ In dem Bereich: Ziffer korrekt erkannt.
+  cmp tos, #36  @ Es gibt 26 Buchstaben.  26 letters available.
+  blo 4f        @ In dem Bereich: Ziffer korrekt erkannt.  In this range ? Digit recognized properly.
 
   @ Immer noch nicht ? Dann ist das ein Sonderzeichen oberhalb der Kleinbuchstaben oder ein Unicode-Zeichen.
   @ Keine gültige Ziffer.
+  @ Not yet recognized ? --> Character has been a special one above small letters or in Unicode.
+  @ No valid digit then..
 
-5: @ Aussprung mit Fehler 
+
+5: @ Aussprung mit Fehler  Error.
   movs tos, #0    @ False-Flag
   bx lr
 
 4: @ Korrekt erkannt. Ziffer in tos 
 
   @ Prüfe nun noch, ob die Ziffer innerhalb der Basis liegt !
+  @ Do not accept digits greater than current base
   cmp tos, r3 @ r3 enthält von number aus die Basis.
   bhs 5b     @ Außerhalb der Basis werden keine Buchstaben als Zahlen akzeptiert.
 
@@ -75,7 +84,7 @@ digit_base_r3:
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "number" @ ( Addr -- n 1 | 0 ) Versucht den String in eine Zahl zu verwandeln.
-number:
+number: @ Tries to convert a string into a number.
 @ -----------------------------------------------------------------------------
 
 /*
@@ -89,26 +98,53 @@ number:
 
   push {r0, r1, r2, r3, r4, lr}
 
-  mov r0, tos   @ Hole die Stringadresse
-  ldrb r1, [r0] @ Hole die Länge des Strings
+  movs r0, tos   @ Hole die Stringadresse      Fetch string address
+  ldrb r1, [r0] @ Hole die Länge des Strings  Fetch length of string
 
-  movs tos, #0  @ Am Anfang noch keine Resultate
+  movs tos, #0  @ Am Anfang noch keine Resultate  No results yet
 
-  movs r2, #1  @ Positiv oder Negativ ?
+  movs r2, #1  @ Positiv oder Negativ ? Positive sign.
 
   ldr r3, =base
   ldr r3, [r3]
 
-1: @ Sind noch Zeichen da ?
+1: @ Sind noch Zeichen da ?  Any characters left ?
   cmp r1, #0
   beq 4f @ String ist leer, bin fertig !
 
-  @ Hole ein Zeichen:
+  @ Hole ein Zeichen:  Fetch a character
   adds r0, #1 @ Pointer weiterrücken
   subs r1, #1 @ Länge um eins verringern
   ldrb r4, [r0] @ Zeichen holen.
 
-  @ Vorzeichen und Basisvorsilben:
+
+  .ifdef m0core
+  @ Vorzeichen und Basisvorsilben:  Sign and base prefixes:
+  cmp r4, #45   @ Minus ?
+  bne 2f
+    movs r2, #0
+    mvns r2, r2 @ -1
+    b 1b
+
+2:cmp r4, #35   @ # ?
+  bne 2f
+    movs r3, #10 @ Umschalten auf Dezimal
+    b 1b
+
+2:cmp r4, #36   @ $ ?
+  bne 2f
+    movs r3, #16 @ Umschalten auf Hexadezimal
+    b 1b
+
+2:cmp r4, #37   @ % ?
+  bne 2f
+    movs r3, #2  @ Umschalten auf Binär
+    b 1b
+
+2:
+
+  .else
+  @ Vorzeichen und Basisvorsilben:  Sign and base prefixes:
   cmp r4, #45   @ Minus ?
   itt eq
   moveq r2, #-1
@@ -128,34 +164,42 @@ number:
   itt eq
   moveq r3, #2  @ Umschalten auf Binär
   beq 1b
+  .endif
 
-  @ Wandele das Zeichen
+
+  @ Wandele das Zeichen  Convert character
   pushda r4
   bl digit_base_r3
-  cmp tos, #0 @ Bei false mochte digit das Zeichen nicht.
-  drop        @ Flag runterwerfen
+  cmp tos, #0 @ Bei false mochte digit das Zeichen nicht.  Error ?
+  drop        @ Flag runterwerfen  Drop the Flag from digit
     beq 5f      @ Aussprung mit Fehler.
 
-  @ Zeichen wurde gemocht.
+  @ Zeichen wurde gemocht.  Character has been successfully converted to a digit.
   popda r4 @ Ziffer holen
 
-  mla tos, tos, r3, r4 @ (Zahl * Basis) + Ziffer
+  .ifdef m0core
+  muls tos, r3
+  adds tos, r4
+  .else
+  mla tos, tos, r3, r4 @ (Zahl * Basis) + Ziffer  (Number * Base) + Digit
+  .endif
+
   b 1b
   
 
-4:@ String ist leer und wurde korrekt umgewandelt.
-  @ Vorzeichen beachten:
+4:@ String ist leer und wurde korrekt umgewandelt.  String is empty. Almost done...
+  @ Vorzeichen beachten:  Take care of sign.
   muls tos, tos, r2 @ Mit 1 oder -1 malnehmen.
-  pushdaconst 1     @ True, 1 Stackelement von der Zahl belegt
-  pop {r0, r1, r2, r3, r4, pc} @ Rücksprung
+  pushdaconst 1     @ True, 1 Stackelement von der Zahl belegt  Success ! String converted to one stack element.
+  pop {r0, r1, r2, r3, r4, pc}
 
-5: @ Digit mochte das Zeichen nicht.
+5: @ Digit mochte das Zeichen nicht. Return without success.
   movs tos, #0
   pop {r0, r1, r2, r3, r4, pc}
 
 
 @ -----------------------------------------------------------------------------
-@ Zahlenausgabe
+@ Zahlenausgabe - Number output
 @ -----------------------------------------------------------------------------
 
 
@@ -163,24 +207,41 @@ number:
   Wortbirne Flag_visible, ".digit" @ ( Ziffer -- Zeichen ) Wandelt eine Ziffer in ein Zeichen um.
                @ Wenn ein Zahlensystem größer 36 angestrebt wird,
                @ werden nicht druckbare Zeichen einfach mit # beschrieben.
-digitausgeben:
+digitausgeben: @ ( u -- c ) Converts a digit into a character.
+               @ If base is bigger than 36, unprintable digits are written as #
 @ -----------------------------------------------------------------------------
+  .ifdef m0core
+  cmp tos, #10   @ Von 0-9:
+  bhs 1f
+    adds tos, #48 @ Schiebe zum Anfang der Zahlen  Shift to beginning of ASCII numbers
+    b 3f
+
+1:cmp tos, #36   @ Von A-Z:
+  bhs 2f 
+    adds tos, #55 @ Alternative für Kleinbuchstaben: 87.                 For small letters: 87.
+    b 3f
+
+2:movs tos, #35 @ Zeichen #, falls diese Ziffer nicht darstellbar ist. Character #, if digit is not printable
+3:bx lr
+
+  .else
   cmp tos, #10   @ Von 0-9:
   itt lo
-  addlo tos, #48 @ Schiebe zum Anfang der Zahlen
+  addlo tos, #48 @ Schiebe zum Anfang der Zahlen  Shift to beginning of ASCII numbers
   blo 1f
 
   cmp tos, #36   @ Von A-Z:
-  ite lo         @ Schiebe zum Anfang der Großbuchstaben - 10 = 55.
-  addlo tos, #55 @ Alternative für Kleinbuchstaben: 87.
-  movhs tos, #35 @ Zeichen #, falls diese Ziffer nicht darstellbar ist
+  ite lo         @ Schiebe zum Anfang der Großbuchstaben - 10 = 55.     Shift to beginning of ASCII-capital-letters- 10 = 55.
+  addlo tos, #55 @ Alternative für Kleinbuchstaben: 87.                 For small letters: 87.
+  movhs tos, #35 @ Zeichen #, falls diese Ziffer nicht darstellbar ist. Character #, if digit is not printable
 
 1:bx lr
+  .endif
 
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "hold" @ Fügt dem Zahlenstring von vorne ein Zeichen hinzu.
-hold: @ ( Zeichen -- )
+hold: @ ( Zeichen -- )  Insert one character at the beginning of number buffer
 @------------------------------------------------------------------------------
 
   @ Alter String:  | Länge     |     |
@@ -189,40 +250,44 @@ hold: @ ( Zeichen -- )
   @ Alter String:  | Länge     | I   | II  | III |     |
   @ Neuer String:  | Länge + 1 | Neu | I   | II  | III |
 
-  @ Mache mich an die Arbeit !
+  @ Old String:  | Length     |     |
+  @ New String:  | Length + 1 | New |
+
+  @ Old String:  | Length     | I   | II  | III |     |
+  @ New String:  | Length + 1 | New | I   | II  | III |
 
   popda r3 @ Das einzufügende Zeichen
 
   ldr r0, =Zahlenpuffer
   ldrb r1, [r0] @ Länge holen  
 
-  cmp r1, #Zahlenpufferlaenge  @ Ist der Puffer voll ?
+  cmp r1, #Zahlenpufferlaenge  @ Ist der Puffer voll ? Number buffer full ?
   bhs 3f                       @ Keine weiteren Zeichen mehr annehmen.  
 
-  @ Länge des Puffers um 1 erhöhen
+  @ Länge des Puffers um 1 erhöhen  Increment length
   adds r1, #1
   strb r1, [r0] @ Aktualisierte Länge schreiben
 
-  @ Am Ende anfangen:
+  @ Am Ende anfangen:  Start moving with the end
   adds r0, r1 @ Zeiger an die freie Stelle für das neue Zeichen
 
   @ Ist die Länge jetzt genau 1 Zeichen ? Dann muss ich nichs schieben.
-  cmp r1, #1
+  cmp r1, #1  @ Check if at least one character has to be moved
   beq 2f
 
-1:@ Schiebeschleife:
+1:@ Schiebeschleife:  Move characters !
   subs r0, #1
-  ldrb r2, [r0] @ Holen an der Stelle-1
+  ldrb r2, [r0] @ Holen an der Stelle-1  Fetch from current location-1
   adds r0, #1
-  strb r2, [r0] @ Schreiben an der Stelle
-  subs r0, #1 @ Weiterrücken
+  strb r2, [r0] @ Schreiben an der Stelle  Write current location
+  subs r0, #1 @ Weiterrücken  Advance Pointers
 
   subs r1, #1
   cmp r1, #1 @ Bis nur noch ein Zeichen bleibt. Das ist das Neue.
-  bne 1b
+  bne 1b     @ Until there is only one character left - the new one.
 
 2:@ Das neue Zeichen an seinen Platz legen
-  strb r3, [r0] 
+  strb r3, [r0] @ Insert new character
 
 3:bx lr
 
@@ -232,52 +297,57 @@ hold: @ ( Zeichen -- )
 vorzeichen: @ ( Vorzeichen -- )
       @ Prüft die Zahl auf dem Stack auf ihr Vorzeichen hin und
       @ fügt bei Bedarf ein Minus an den Ziffernstring an.
+      @ Checks flag of number on stack and adds a minus to number buffer if it is negative.
 @------------------------------------------------------------------------------
   cmp tos, #0
   bmi 1f
   drop
   bx lr
 
-1:movs tos, #45  @ Minuszeichen
-  b.n hold         @ an den Zahlenpuffer anhängen
+1:movs tos, #45  @ Minuszeichen  ASCII for minus
+  b.n hold         @ an den Zahlenpuffer anhängen  put it into number buffer
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "#>" @ ( ZahlenrestL (ZahlenrestH) -- Addr )
 zifferstringende:  @ Schließt einen neuen Ziffernstring ab und gibt seine Adresse zurück.
                    @ Benutzt dafür einfach den Zahlenpuffer.
+                   @ Finishes a number string and gives back its address.
 @------------------------------------------------------------------------------
   ldr tos, =Zahlenpuffer @ Rest überschreiben, einfach in TOS legen.
   bx lr
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "#S"
-alleziffern: @ ( Zahl -- Zahl=0 )
+alleziffern: @ ( Zahl -- Zahl=0 )      
       @ Fügt alle Ziffern, jedoch mindestens eine,
       @ an den im aufbau befindlichen String an.
-      @ Benutzt dafür einfach den Zahlenpuffer.
-      @ Normalerweise doppeltgenau, hier nur einfachgenau.
+      @ Inserts all digits, at least one, into number buffer.
 @------------------------------------------------------------------------------
   push {lr}
 1:bl ziffer
-  cmp tos, #0 @ Wenn im High-Teil
+  cmp tos, #0
   bne 1b
   pop {pc}
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "#"
-ziffer: @ ( Zahl -- Zahl ) oder
-        @ ( ZahlL ZahlH -- ZahlL ZahlH )
+ziffer: @ ( Zahl -- Zahl )
       @ Fügt eine weitere Ziffer hinzu, Rest entsprechend verkleinert.
-      @ Benutzt dafür einfach den Zahlenpuffer.
+      @ Insert one more digit into number buffer
 @------------------------------------------------------------------------------
+  @ Idea: Divide by base. Remainder is digit, Result is to be handled in next run.
   @ Idee dahinter: Teile durch die Basis.
   @ Bekomme einen Rest, und einen Teil, den ich im nächsten Durchlauf
   @ behandeln muss. Der Rest ist die Ziffer.
   push {lr}
-    @ Normalerweise doppeltgenau, hier nur einfachgenau.
-    ldr r0, =base
-    ldr r0, [r0]
-    pushda r0 @ Basis
+
+@    ldr r0, =base
+@    ldr r0, [r0]
+@    pushda r0 @ Basis
+    pushdatos
+    ldr tos, =base
+    ldr tos, [tos]
+
     @ Müsste haben: (u Basis -- )
     bl u_divmod @ ( u u -- u u ) Dividend Divisor -- Ergebnis Rest
     swap
@@ -294,25 +364,18 @@ ziffer: @ ( Zahl -- Zahl ) oder
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "<#" @ ( Zahl -- Zahl )
 zifferstringanfang: @ Eröffnet einen neuen Ziffernstring.
-                    @ Benutzt dafür einfach den Zahlenpuffer.
-                    @ Normalerweise doppeltgenau, hier nur einfachgenau.
+                    @ Opens a number string
 @------------------------------------------------------------------------------
   ldr r0, =Zahlenpuffer @ Länge löschen, bisherige Länge Null.
   movs r1, #0
   strb r1, [r0]
   bx lr  
 
-/*
-  ; Idee dahinter: Teile durch die Basis.
-  ; Bekomme einen Rest, und einen Teil, den ich im nächsten Durchlauf
-  ; behandeln muss. Der Rest ist die Ziffer.
-*/ 
-
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "u."
       @ ( Zahl -- )
       @ Gibt eine vorzeichenlose Zahl aus.
-      @ Benutzt dafür einfach den Zahlenpuffer.
+      @ Prints an unsigned single number
 @ -----------------------------------------------------------------------------
 udot:
   push {lr}
@@ -324,16 +387,23 @@ udot:
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "." @ ( Zahl -- )
      @ Gibt eine vorzeichenbehaftete Zahl aus.
-     @ Benutzt dafür einfach den Zahlenpuffer.
+     @ Prints a signed single number
 @ -----------------------------------------------------------------------------
 dot:
   push {lr}
   @ In Forth: dup abs <# #S SIGN #>
   dup @ ( Vorzeichen Zahl )
 
+  .ifdef m0core
+  cmp tos, #0
+  bpl 1f
+  rsbs tos, tos, #0
+1:
+  .else
   cmp tos, #0 @ abs(tos)
   it mi
   rsbsmi tos, tos, #0 @ ( Vorzeichen u )
+  .endif
 
   bl zifferstringanfang
   bl alleziffern    @ ( Vorzeichen 0 )
@@ -343,6 +413,5 @@ dot:
 dot_inneneinsprung:
   bl zifferstringende
   bl type
-  pushdaconst 32
-  bl emit
+  bl space
   pop {pc}

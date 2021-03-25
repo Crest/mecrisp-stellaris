@@ -17,10 +17,12 @@
 @
 
 .syntax unified
-.cpu cortex-m4
+.cpu cortex-m0
 .thumb
 
-.equ charkommaavailable, 1
+.equ m0core, 1
+@ .equ charkommaavailable, 1
+.equ emulated16bitflashwrites, 1
 
 @ -----------------------------------------------------------------------------
 @ Meldungen, hier definiert, damit das Zeilenende leicht geändert werden kann
@@ -46,7 +48,7 @@
         .byte 9f - 8f         @ Compute length of name field.
 8:      .ascii "\Meldung\n"
 9:      .p2align 1
-  b quit
+  bl quit
 .endm
 
 .macro Fehler_Quit_n Meldung
@@ -54,7 +56,7 @@
         .byte 9f - 8f         @ Compute length of name field.
 8:      .ascii "\Meldung\n"
 9:      .p2align 1
-  b.n quit
+  bl quit
 .endm
 
 @ -----------------------------------------------------------------------------
@@ -81,8 +83,12 @@
   .include "../common/stackjugglers.s" 
   .include "../common/logic.s"
   .include "../common/comparisions.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/memory.s"
   .include "flash.s"
+  .ltorg @ Mal wieder Konstanten schreiben
+  .include "hflashstoreemulation.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/calculations.s"
   .ltorg @ Mal wieder Konstanten schreiben
   .include "terminal.s"
@@ -97,24 +103,39 @@
   .include "../common/controlstructures.s"
   .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/doloop.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/case.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/token.s"
   .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/numberstrings.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/interpreter.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "interrupts.s" @ You have to change interrupt handlers for Porting !
 
 .equ CoreDictionaryAnfang, Latest @ Dictionary-Einsprungpunkt setzen
                                   @ Set entry point for Dictionary
 
+
+.equ SIM_COPC,   0x40048100
+
 @ -----------------------------------------------------------------------------
 Reset: @ Einsprung zu Beginn
 @ -----------------------------------------------------------------------------
+
+  @ Disable the watchdog timer
+  movs r1, #0
+  ldr  r0, =SIM_COPC
+  str  r1, [r0]
+
    @ Initialisierungen der Hardware, habe und brauche noch keinen Datenstack dafür
    @ Initialisations for Terminal hardware, without Datastack.
    bl uart_init
 
-Reset_Inneneinsprung:
+Restart:
+   ldr r0, =returnstackanfang
+   mov sp, r0
    @ Return stack pointer already set up. Time to set data stack pointer !
    @ Normaler Stackpointer bereits gesetzt. Setze den Datenstackpointer:
    ldr psp, =datenstackanfang
@@ -140,7 +161,10 @@ Reset_Inneneinsprung:
    @ Catch the pointers for Flash dictionary
    .include "../common/catchflashpointers.s"
 
-   writeln "Mecrisp-Stellaris 0.7 for STM32F407 by Matthias Koch"
+   @ Prepare 16-Bit Flash write emulation value-and-location collection table
+   bl sammeltabelleleeren
+
+   writeln "Mecrisp-Stellaris 0.7 with M0 core for KL25Z128 by Matthias Koch"
 
    @ Genauso wie in quit. Hier nochmal, damit quit nicht nach dem Init-Einsprung nochmal tätig wird.
    @ Exactly like the initialisations in quit. Here again because quit should not be executed after running "init".
@@ -182,14 +206,20 @@ init_name: .byte 4, 105, 110, 105, 116, 0 @ "init"
 
 @ Konstanten für die Größe des Ram-Speichers
 
-.equ RamAnfang, 0x20000000 @ Start of RAM          Porting: Change this !
-.equ RamEnde,   0x20020000 @ End   of RAM. 128 kb. Porting: Change this !
+
+@.equ RamAnfang, 0x20000000 @ Start of RAM          Porting: Change this !
+.equ RamAnfang, 0x1FFFF000 @ Start of RAM          Porting: Change this !
+.equ RamEnde,   0x20003000 @ End   of RAM.  16 kb. Porting: Change this !
 
 @ Konstanten für die Größe und Aufteilung des Flash-Speichers
 
 .equ Kernschutzadresse,     0x00004000 @ Darunter wird niemals etwas geschrieben ! Mecrisp core never writes flash below this address.
 .equ FlashDictionaryAnfang, 0x00004000 @ 16 kb für den Kern reserviert...          16 kb Flash reserved for core.
-.equ FlashDictionaryEnde,   0x00100000 @ 1 MB Platz für das Flash-Dictionary       1 MB Flash available. Porting: Change this !
+.equ FlashDictionaryEnde,   0x00020000 @ 128 kb Platz für das Flash-Dictionary       1 MB Flash available. Porting: Change this !
+
+@.equ FlashDictionaryAnfang, 0x1FFFF000 @ Ein bisschen Flash-Dictionary im RAM.
+@.equ FlashDictionaryEnde,   0x20000000 @ Ein bisschen Flash-Dictionary im RAM.
+
 .equ Backlinkgrenze,        RamAnfang  @ Ab dem Ram-Start.
 
 
@@ -231,6 +261,10 @@ ramallot returnstackende, 256  @ Return stack
 ramallot returnstackanfang, 0
 
 ramallot Tokenpuffer, maximaleeingabe+1  @ Token buffer, same length as Input buffer
+
+.ifdef emulated16bitflashwrites
+  ramallot Sammeltabelle, Sammelstellen * 6 @ 16-Bit Flash write emulation collection buffer
+.endif
 
 .equ RamDictionaryAnfang, rampointer @ Ende der Puffer und Variablen ist Anfang des Ram-Dictionary.  Start of RAM dictionary
 .equ RamDictionaryEnde,   RamEnde    @ Das Ende vom Dictionary ist auch das Ende vom gesamten Ram.   End of RAM dictionary = End of RAM
