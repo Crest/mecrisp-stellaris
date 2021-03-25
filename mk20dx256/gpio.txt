@@ -1,14 +1,4 @@
-
-compiletoflash
-
-: Flamingo cr
-."      _" cr
-."     ^-)" cr
-."      (.._          .._" cr
-."       \`\\        (\`\\        (" cr
-."        |>         ) |>        |)" cr
-." ______/|________ (7 |` ______\|/_______a:f" cr
-;
+\ Constants for GPIO Ports A-E
 
 $400FF000 constant GPIOA_PDOR   \ Port Data Output Register
 $400FF004 constant GPIOA_PSOR   \ Port Set Output Register
@@ -65,23 +55,3 @@ $4004D000 constant PORTE_PCR
 $4004D080 constant PORTE_GPCLR
 $4004D084 constant PORTE_GPCHR
 
-: init
-  fullspeed
-  cr
-  Flamingo
-  cr
-  ." Have a nice day !" cr
-;
-
-\ Commands for the built-in LED on the Teensy 3.1
-: led-init
-  $0100  5 4 * PORTC_PCR + ! \ Port C1 GPIO (Alternative 1)
-  $20 GPIOC_PDDR ! \ Port C5 as output
-;
-
-: led-on $20 GPIOC_PSOR bis! ;
-
-: led-off $20 GPIOC_PCOR bis! ;
-
-compiletoram
-init
