@@ -227,7 +227,7 @@ literalkomma: @ Nur r3 muss erhalten bleiben  Save r3 !
 @ -----------------------------------------------------------------------------
   push {r3, lr}
 
-  pushdaconstw 0xf847  @ stmdb psp!, {tos}
+  pushdaconstw 0xf847  @ str tos, [psp, #-4]!
   bl hkomma
   pushdaconstw 0x6d04
   bl hkomma
@@ -292,7 +292,9 @@ does: @ Gives freshly defined word a special action.
     @ Die Adresse ist hier nicht auf dem Stack, sondern in LR. LR ist sowas wie "TOS" des Returnstacks.
     @ Address is in LR which is something like "TOS in register" of return stack.
 
-  pushda lr
+  pushdatos
+  mov tos, lr
+
   subs tos, #1 @ Denn es ist normalerweise eine ungerade Adresse wegen des Thumb-Befehlssatzes.  Align address. It is uneven because of Thumb-instructionset bit set.
 
   @ Am Ende des Wortes wird ein pop {pc} stehen, und das kommt prima hin.
@@ -317,7 +319,8 @@ dodoes:
   @ Präpariere die Einsprungadresse, die via callkomma eingefügt werden muss.
   @ Prepare the destination address
 
-  pushda lr    @ Brauche den Link danach nicht mehr, weil ich über die in dem Wort das does> enthält gesicherte Adresse rückspringe
+  pushdatos
+  mov tos, lr  @ Brauche den Link danach nicht mehr, weil ich über die in dem Wort das does> enthält gesicherte Adresse rückspringe
                @ We don't need this Link later because we return with the address saved by the definition that contains does>.
   subs tos, #1 @ Einen abziehen. Diese Adresse ist schon ungerade für Thumb-2, aber callkomma fügt nochmal eine 1 dazu. 
                @ Subtract one. Adress is already uneven for Thumb-instructionset, but callkomma will add one anyway.

@@ -67,9 +67,8 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "over" @ ( x y -- x y x )
 @ -----------------------------------------------------------------------------
-  ldr x, [psp]        @ Get X into a register.
-  pushdatos           @ Flush cached TOS
-  movs tos, x          @ Copy X into TOS.
+  pushdatos
+  ldr tos, [psp, #4] 
   bx lr
 
 @ -----------------------------------------------------------------------------

@@ -89,3 +89,8 @@
   - Double numbers and s31.32 fixpoint calculations
   - Sine/Cosine Cordic algorithm
   - Two channel 1 Msps oscilloscope for LM4F120
+
+31.12.2013, Matthias Koch, Mecrisp-Stellaris 0.9.1:
+
+  - Partial disassembler for M3/M4 included
+  - Small optimisations in core

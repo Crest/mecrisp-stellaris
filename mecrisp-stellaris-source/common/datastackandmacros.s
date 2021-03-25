@@ -41,8 +41,14 @@ psp .req r7
 @ -----------------------------------------------------------------------------
 
 .macro pushdatos @ Push TOS on Datastack - a common, often used factor.
-  subs psp, #4
-  str tos, [psp]
+
+  .ifdef m0core
+    subs psp, #4
+    str tos, [psp]
+  .else
+    str tos, [psp, #-4]!
+  .endif
+
 .endm
   
 .macro pushdaconst zahl @ Push small constant on Datastack
@@ -66,7 +72,7 @@ psp .req r7
 .endm
 
 .macro popda register @ Pop register from Datastack
-  mov \register, tos
+  movs \register, tos
   ldm psp!, {tos}
 .endm
 
