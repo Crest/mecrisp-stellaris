@@ -1,19 +1,4 @@
 
-\ This is a special wrapper to generate an Intel-HEX binary for LPC1114FN28
-\ which contains your favourite code in Flash Dictionary.
-\ Emulator use only !
-
-' h! hook-hflash! !  \ The Thumbulator doesn't need fancy Flash access control :o)
-
-compiletoflash
-
-\ Your code comes here
-
-
-
-
-
-
 compiletoram
 
 \ Print a copy of core and dictionary contents to clone everything into another chip.
@@ -78,5 +63,3 @@ compiletoram
 ; 
 
 \ arm-none-eabi-objcopy -I ihex -O binary hexerei.hex binary.bin
-hexdump
-
