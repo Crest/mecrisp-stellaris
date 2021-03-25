@@ -30,7 +30,7 @@ token:
   Wortbirne Flag_visible, "parse" @ ( c -- Addr )
 parse:
 @ -----------------------------------------------------------------------------
-  push {lr}
+  push {r4, r5, lr}
   @ Mal ein ganz anderer Ansatz:
   @ Der Eingabepuffer bleibt die ganze Zeit unverändert.
   @ Pufferstand gibt einfach einen Offset in den Eingabepuffer, der zeigt, wie viele Zeichen schon verbraucht worden sind.
@@ -113,6 +113,6 @@ parse:
 
   mov tos, r3 @ Tokenpufferadresse zurückgeben
 
-  pop {lr}
+  pop {r4, r5, lr}
   bx lr
  

@@ -19,14 +19,14 @@
 @ Routinen für die Interrupthandler, die zur Laufzeit neu gesetzt werden können.
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "eint" @ ( -- ) Aktiviert Interrupts
+  Wortbirne Flag_inline, "eint" @ ( -- ) Aktiviert Interrupts
 @ ----------------------------------------------------------------------------- 
   cpsie i @ Interrupt-Handler
  @ cpsie f @ Fehler-Handler
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "dint" @ ( -- ) Deaktiviert Interrupts
+  Wortbirne Flag_inline, "dint" @ ( -- ) Deaktiviert Interrupts
 @ ----------------------------------------------------------------------------- 
   cpsid i @ Interrupt-Handler
  @ cpsid f @ Fehler-Handler
@@ -43,12 +43,18 @@ nop_vektor:
   Wortbirne Flag_visible|Flag_variable, "irq-systick" @ ( -- addr )
   CoreVariable irq_hook_systick
 @------------------------------------------------------------------------------  
-  ldr r0, =irq_hook_systick
-  pushda r0
+  stmdb psp!, {tos}
+  ldr tos, =irq_hook_systick
   bx lr
   .word nop_vektor  @ Startwert für unbelegte Interrupts
 
 irq_vektor_systick:
+  ldr r0, =irq_hook_systick
+  ldr r0, [r0]
+  adds r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz
+  mov pc, r0  @ Angesprungene Routine kehrt von selbst zurück...
+
+/*
   push {r4, r5, r6, r7, lr} @ Alles Wesentliche sichern.
     ldr r0, =irq_hook_systick
     ldr r0, [r0]
@@ -56,6 +62,7 @@ irq_vektor_systick:
     bl execute
   pop  {r4, r5, r6, r7, lr} @ Alles Wesentliche zurückholen.
   bx lr
+*/
 
 /*
   Zu den Registern, die gesichert werden müssen:
@@ -64,8 +71,8 @@ irq_vektor_systick:
   r2  Wird von IRQ-Einsprung gesichert
   r3  Wird von IRQ-Einsprung gesichert
 
-  r4    Unbedingt noch sichern
-  r5    Unbedingt noch sichern
+  r4    Unbedingt noch sichern - werden nun in jeder Routine vor Benutzung gesichert
+  r5    Unbedingt noch sichern - werden nun in jeder Routine vor Benutzung gesichert
   r6  TOS - müsste eigentlich von sich aus funktionieren
   r7  PSP - müsste eigentlich von sich aus funktionieren
 

@@ -22,10 +22,6 @@ compiletoflash
 \ Jetzt geht es mal an die richtig frischen Neuigkeiten auf dem Stellaris:
 \ Leitungen wackeln !
 
-$400FE100 constant SYSCTL_RCGC0
-$400FE104 constant SYSCTL_RCGC1
-$400FE108 constant SYSCTL_RCGC2
-
 $400253FC constant PORTF_DATA ( Ein- und Ausgaberegister )  
 $40025400 constant PORTF_DIR  ( Soll der Pin Eingang oder Ausgang sein ? )
 $40025500 constant PORTF_DR2R ( 2 mA Treiber )
@@ -47,11 +43,6 @@ decimal
 1  constant Knopf2
 
 : init
-  $000001FF SYSCTL_RCGC2 ! ( Alle GPIOs mit Takt versorgen und damit aktivieren )
-  \ Ein bisschen müsste ich jetzt warten... Das passiert, während ich weiterkompiliere.
-  cr
-  Flamingo
-
   \ PF0 ist auch der NMI-Eingang. Benötige also eine besondere Sequenz, um ihn für den Taster freizuschalten.
   $4C4F434B $40025520 !    ( PORTF_LOCK )
           1 $40025524 bis! ( PORTF_CR )
@@ -60,6 +51,9 @@ decimal
   %11111 portf_den ! \ Alle Leitungen an Port F seien digitale Pins
   %01110 portf_dir ! \ Die Leuchtdiodenanschlüsse seien Ausgänge
   %10001 portf_pur ! \ Hochziehwiderstände für die Taster aktivieren
+
+  cr
+  Flamingo
   cr
   ." Have a nice day !" cr
 ;

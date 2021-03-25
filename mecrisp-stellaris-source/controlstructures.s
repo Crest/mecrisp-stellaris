@@ -24,55 +24,47 @@ cjumpgenerator: @ ( Adresse-der-Opcodelücke Sprungziel Bitmaske -- )
 @------------------------------------------------------------------------------ 
   popda r2 @ Bitmaske
   popda r1 @ Sprungziel
-  popda r0 @ Adresse-der-Opcodelücke
+  @ popda r0 @ Adresse-der-Opcodelücke - bleibt auf dem Stack
   
-  sub r3, r1, r0 @ Differenz aus Lücken-Adresse und Sprungziel bilden
-  subs r3, #4     @ Da der aktuelle Befehl noch läuft und es komischerweise andere Offsets beim ARM gibt.
+  subs r3, r1, tos @ Differenz aus Lücken-Adresse und Sprungziel bilden
+  subs r3, #4      @ Da der aktuelle Befehl noch läuft und es komischerweise andere Offsets beim ARM gibt.
 
   @ 8 Bits für die Sprungweiter mit Vorzeichen - 
   @ also habe ich 7 freie Bits, das oberste muss mit dem restlichen Vorzeichen übereinstimmen. 
 
-
-  ldr r4, =0xFFFFFF01   @ 7 Bits frei
-  ands r4, r3
-  cmp r4, #0  @ Wenn dies Null ergibt, positive Distanz ok.
+  ldr r1, =0xFFFFFF01   @ 7 Bits frei
+  ands r1, r3
+  cmp r1, #0  @ Wenn dies Null ergibt, positive Distanz ok.
   beq 1f
 
-  ldr r5, =0xFFFFFF00
-  cmp r4, r5
+  ldr r0, =0xFFFFFF00
+  cmp r1, r0
   beq 1f  @ Wenn es gleich ist: Negative Distanz ok.
     @ Ansonsten ist die Sprungdistanz einfach zu groß.
-    writeln "Jump too far"
-    b quit
-
+jump_too_far:
+    Fehler_Quit "Jump too far"
 1:
 
-
   asrs r3, #1 @ Schieben, da die Sprünge immer auf geraden Adressen beginnen und enden.
-  mov r4, #0xFF @ Genau 8 Bits Sprungmaske.
-  ands r3, r4    @ Ausschnitt anwenden
+  movs r1, #0xFF @ Genau 8 Bits Sprungmaske.
+  ands r3, r1    @ Ausschnitt anwenden
 
   orrs r3, r2    @ Sprungbedingung und den Rest des Opcodes hinzufügen
-
-
-
+  mov r0, tos  @ Adresse-der-Opcodelücke in r0 holen
+  mov tos, r3  @ Sprungopcode stattdessen hineinlegen
 
 sprungbefehl_einfuegen:
+  push {lr}
+    @ Opcode auf dem Stack, Adresse in r0
+    @ Dictionary-Pointer verbiegen:
+      @ Dictionarypointer sichern
+      ldr r2, =Dictionarypointer
+      ldr r3, [r2] @ Alten Dictionarypointer auf jeden Fall bewahren
 
-  @ Dictionarypointer sichern
-  ldr r4, =Dictionarypointer
-  ldr r5, [r4] @ Alten Dictionarypointer auf jeden Fall bewahren
-
-  str r0, [r4] @ Dictionarypointer umbiegen
-  
-  push {r4, r5, lr}
-  pushda r3
-  bl hkomma          @ Befehl einfügen. Muss ich später auf Komma umbiegen.
-  pop {r4, r5, lr}
-
-  str r5, [r4] @ Dictionarypointer wieder zurücksetzen.
-
-  bx lr
+      str r0, [r2] @ Dictionarypointer umbiegen
+      bl hkomma    @ Opcode einfügen
+      str r3, [r2] @ Dictionarypointer wieder zurücksetzen.
+  pop {pc}
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "jump," @ Fügt einen unbedingten Sprung ein.
@@ -81,89 +73,36 @@ jumpgenerator: @ ( Adresse-der-Opcodelücke Sprungziel -- )
   popda r1 @ Sprungziel
   popda r0 @ Adresse-der-Opcodelücke
   
-  sub r3, r1, r0 @ Differenz aus Lücken-Adresse und Sprungziel bilden
+  subs r3, r1, r0 @ Differenz aus Lücken-Adresse und Sprungziel bilden
   subs r3, #4     @ Da der aktuelle Befehl noch läuft und es komischerweise andere Offsets beim ARM gibt.
 
   @ 11 Bits für die Sprungweiter mit Vorzeichen - 
   @ also habe ich 10 freie Bits, das oberste muss mit dem restlichen Vorzeichen übereinstimmen. 
 
-
-  ldr r4, =0xFFFFF801  @ 10 Bits frei
-  ands r4, r3
-  cmp r4, #0  @ Wenn dies Null ergibt, positive Distanz ok.
+  ldr r1, =0xFFFFF801  @ 10 Bits frei
+  ands r1, r3
+  cmp r1, #0  @ Wenn dies Null ergibt, positive Distanz ok.
   beq 1f
 
-  ldr r5, =0xFFFFF800
-  cmp r4, r5
-  beq 1f  @ Wenn es gleich ist: Negative Distanz ok.
-    @ Ansonsten ist die Sprungdistanz einfach zu groß.
-    writeln "Jump too far"
-    b quit
+  ldr r2, =0xFFFFF800
+  cmp r1, r2
+  bne.n jump_too_far @ Wenn es gleich ist: Negative Distanz ok.
 
 1:
 
   asrs r3, #1 @ Schieben, da die Sprünge immer auf geraden Adressen beginnen und enden.
-  ldr r4, =0x7FF @ Genau 11 Bits Sprungmaske.
-  ands r3, r4     @ Ausschnitt anwenden
+  ldr r2, =0x7FF @ Genau 11 Bits Sprungmaske.
+  ands r3, r2     @ Ausschnitt anwenden
 
   orrs r3, 0xE000  @ Rest des Opcodes hinzufügen
-
-  b sprungbefehl_einfuegen
-
-@  strh r3, [r0]   @ Befehl einfügen. Muss ich später auf Komma umbiegen.
-@  bx lr
-
-
+  pushda r3
+  b.n sprungbefehl_einfuegen @  strh r3, [r0] @ Befehl einfügen. Muss ich später auf Komma umbiegen.
 
 @------------------------------------------------------------------------------
 @ Verschiedene Sprünge, die von den Kontrollstrukturen gebracht werden.
 @------------------------------------------------------------------------------
 
-/*
-branch_r:     @ ( -- Sprungziel ) "branch<--"  ; Einleitung bedingter und unbedingter Rückwärtssprung
-    b here
 
-r_branch_jnz:
-    push #02000h
-    jmp +
-
-r_nullbranch: ; ( Sprungziel -- ) "<--0branch" ; Abschluss bedingter Rückwärtssprung
-    call #nullprobekomma
-    push #0010010000000000b ; Opcode für einen bedingten Sprung jz
-    jmp +
-
-r_branch:     ; ( Sprungziel -- ) "<--branch" ; Abschluss unbedingter Rückwärtssprung
-    push #0011110000000000b ; Opcode für einen unbedingten Sprung jmp
-+   call #branch_v ; pushdadouble &DictionaryPointer, #2
-                   ; call #allot
-    call #swap_sprung ; swap
-    r_from
-    jmp jumpgenerator
-
-nullbranch_v: ; ( -- Adresse-für-Sprungbefehl ) "0branch-->" ; Einleitung bedingter Vorwärtssprung
-    call #nullprobekomma
-branch_v:     ; ( -- Adresse-für-Sprungbefehl ) "branch-->"  ; Einleitung unbedingter Vorwärtssprung
-    pushda &DictionaryPointer
-    br #zwei_allot
-
-  ifdef caseeinbinden
-v_casebranch:
-    push #02000h ; Opcode für einen bedingten Sprung jnz
-    jmp +
-  endif
-
-v_nullbranch: ; ( Adresse-für-Sprungbefehl -- ) "-->0branch" ; Abschluss bedingter Vorwärtssprung
-    push #0010010000000000b ; Opcode für einen bedingten Sprung jz
-    jmp +
-
-v_branch:     ; ( Adresse-für-Sprungbefehl -- ) "-->branch" ; Abschluss unbedingter Vorwärtssprung
-    push #0011110000000000b ; Opcode für einen unbedingten Sprung jmp
-+   pushdadouble &DictionaryPointer, @sp+
-    jmp jumpgenerator
-
-*/
-
-nullprobekomma:
 @  beq.n 1f
 @  drop
 @1: drop
@@ -175,6 +114,7 @@ nullprobekomma:
 @    132e:	2e00      	cmp	r6, #0
 @    1330:	cf40      	ldmia	r7!, {r6}
 
+nullprobekomma:
   push {lr}
   pushdaconst 0x2e00 @ cmp tos, #0
   bl hkomma
@@ -182,11 +122,8 @@ nullprobekomma:
   bl hkomma
   pop {pc}
 
-
-
 branch_r:     @ ( -- Sprungziel ) "branch<--"  ; Einleitung bedingter und unbedingter Rückwärtssprung
     b here
-
 
 r_branch_jne: @ ( Sprungziel -- ) "<--0branch" ; Abschluss besonderer bedingter Rückwärtssprung für loop
   push {lr}
@@ -203,7 +140,6 @@ r_branch_jvc: @ ( Sprungziel -- ) "<--0branch" ; Abschluss besonderer bedingter 
   pushdaconst 0xD700 @ Opcode für den bedingten Sprung bvc
   bl cjumpgenerator
   pop {pc}
-
 
 r_nullbranch: @ ( Sprungziel -- ) "<--0branch" ; Abschluss bedingter Rückwärtssprung
   push {lr}
@@ -268,13 +204,12 @@ v_casebranch:
     b v_branch @ Abschluss unbedingter Vorwärtssprung
 
 1:cmp tos, #2 @ Kommend aus IF-Zweig
-  bne strukturen_passen_nicht
+  bne.n strukturen_passen_nicht
     drop @ ( Sprunglücke )
     b v_nullbranch @ Abschluss bedingter Vorwärtssprung v_nullbranch
 
 strukturen_passen_nicht:
-  writeln "Structures don't match"
-  b quit
+  Fehler_Quit "Structures don't match"
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_immediate_compileonly, "else"
@@ -320,7 +255,7 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )
 
   @ ( Sprungziel-zurück-an-Anfang Adresse-für-Sprung-ans-Ende 4 )
   cmp tos, #4
-  bne strukturen_passen_nicht
+  bne.n strukturen_passen_nicht
   drop
   @ ( Sprungziel-zurück-an-Anfang  Adresse-für-Sprung-ans-Ende )
   swap
@@ -338,7 +273,7 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )
   @ begin (Bedingung) while (Agenda) repeat (Folgendes).
   @ In Pascal: while (true) do Agenda;
   cmp tos, #1
-  bne strukturen_passen_nicht
+  bne.n strukturen_passen_nicht
   drop
   @ ( Sprungziel ) wird für den späteren Rücksprung benutzt.
   push {lr}
@@ -353,7 +288,7 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )
   @ ( Sprungziel 1 -- )
 @------------------------------------------------------------------------------
   cmp tos, #1
-  bne strukturen_passen_nicht
+  bne.n strukturen_passen_nicht
   drop
   b r_nullbranch
 
@@ -362,7 +297,7 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )
   @ ( Sprungziel 1 -- )
 @------------------------------------------------------------------------------
   cmp tos, #1
-  bne strukturen_passen_nicht
+  bne.n strukturen_passen_nicht
   drop
   b r_branch
 
@@ -383,5 +318,3 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )
 @ : viel begin [ .s ] ." Huhu " key 27 =  [ .s ] until ;
 @ : viel begin [ .s ] 1 [ .s ] until ;
 @ : taste begin ?key until ; Funktioniert.
-
-

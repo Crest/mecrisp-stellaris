@@ -51,8 +51,7 @@ tick: @ Nimmt das nächste Token aus dem Puffer,
   bne 1f
 
     @ Token ist leer. Brauche Stacks nicht zu putzen.
-    writeln " ' needs name !"
-    b quit
+    Fehler_Quit " ' needs name !"
 
 1:@ Tokenname ist okay.
   @ Prüfe, ob er schon existiert.
@@ -67,8 +66,8 @@ nicht_gefunden:
     ldr r0, =Tokenpuffer
     pushda r0
     bl type
-    writeln " not found."
-    b quit
+    Fehler_Quit " not found."
+
 2:@ Gefunden, alles gut
   pop {pc}
 
@@ -87,69 +86,28 @@ nicht_gefunden:
 
   @ ( Einsprungadresse )  
   cmp tos, #0
-  bne 1f
-    b nicht_gefunden
+  beq.n nicht_gefunden
 
 1:and r1, r0, #Flag_immediate
   cmp r1, #Flag_immediate
-  bne 2f
-    bl callkomma
-    pop {pc}
+  beq 4f
 
 2:and r1, r0, #Flag_inline
   cmp r1, #Flag_inline
   bne 3f                             @ ( Einsprungadresse )
     bl literalkomma                  @ Einsprungadresse als Konstante einkompilieren
-    movw r1, #:lower16:inlinekomma   @ Inline-Einfügung
-@   movt r1, #:upper16:inlinekomma   @ Nicht nötig, da die Adresse in den untersten 64 kb liegt
-    pushda r1
-    bl callkomma                     @ zum Aufruf bereitlegen
-    pop {pc}
-
+    stmdb psp!, {tos}
+    movw tos, #:lower16:inlinekomma  @ Inline-Einfügung
+    @ movt tos, #:upper16:inlinekomma   @ Nicht nötig, da die Adresse in den untersten 64 kb liegt
+    b 4f                             @ zum Aufruf bereitlegen
+    
 3:@ Normal
     bl literalkomma
-    movw r1, #:lower16:callkomma
-@   movt r1, #:upper16:callkomma    @ Nicht nötig, da die Adresse in den untersten 64 kb liegt
-    pushda r1
-    bl callkomma
-    pop {pc}
-  
-    
-
-/*
-;------------------------------------------------------------------------------
-  Wortbirne Flag_visible_immediate, "postpone" ; Sucht das nächste Wort im Eingabestrom
-                                                ; und fügt es auf besondere Weise ein.
-;------------------------------------------------------------------------------
-  call #token
-  ; ( Pufferadresse )
-  call #wortsuche
-  ; ( Einsprungadresse Flags )
-    tst 2(r4)
-    je -  ; Benutze Fehlermeldung aus tick.
-
-  bit #010h, @r4
-  jnc +
-  ; Immediate
-    drop
-    jmp callkomma  ; Ok.
-
-+ bit #020h, @r4
-  jnc +
-  ; Inline
-    drop                  ; ( Einsprungadresse )
-    call #literalkomma    ; Einsprungadresse als Konstante einkompilieren
-    pushda #inlinekomma   ; Inline-Einfügung
-    jmp callkomma         ; zum Aufruf bereitlegen
-
-+ ; Normal
-    drop
-    call #literalkomma
-    pushda #callkomma
-    jmp callkomma
-
-*/
-
+    stmdb psp!, {tos}
+    movw tos, #:lower16:callkomma
+    @ movt tos, #:upper16:callkomma    @ Nicht nötig, da die Adresse in den untersten 64 kb liegt
+4:  pop {lr}
+    b.n callkomma
 
 @ -----------------------------------------------------------------------------
 movwkomma: @ Register r0: Konstante
@@ -223,7 +181,7 @@ movtkomma: @ Register r0: Konstante
   Wortbirne Flag_visible, "movwmovt," @ ( x Registermaske -- )
 movwmovtkomma:
 @ -----------------------------------------------------------------------------
-  push {lr}
+  push {r0, r1, r2, r3, r4, lr}
 
   popda r4 @ Hole die Registermaske
   lsl r4, #8 @ Den Register um 8 Stellen schieben
@@ -239,98 +197,7 @@ movwmovtkomma:
 
     bl movtkomma
 
-1:pop {pc}
-
-
-
-
-/*
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "movwmovt," @ ( x Registermaske -- )
-movwmovtkomma:
-@ -----------------------------------------------------------------------------
-  push {lr}
-
-  popda r4 @ Hole die Registermaske
-  lsl r4, #8 @ Den Register um 8 Stellen schieben
-
-  popda r0 @ Hole die Konstante
-
-  @ Setze daraus ein movw/movt-Paar zusammen:
-
-  @ Dessen Bits müssen nun geschickt verwurstet werden.
-  @     b4e:       f240 0000       movw    r0, #0
-  @     b52:       f2c0 0000       movt    r0, #0
-
-  ldr r3, =0xf2400000  @ Opcode movw r0, #0
-
-  ldr r1, =0x0000F000  @ Bit 16 - 13
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsl r2, #4           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
-
-  ldr r1, =0x00000800  @ Bit 12
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsl r2, #15          @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
-
-  @ Richtig:
-  ldr r1, =0x00000700  @ Bit 11 - 9
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsl r2, #4           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
-
-  @ Richtig:
-  ldr r1, =0x000000FF  @ Bit 8 - 1
-  and r2, r0, r1       @ aus der Adresse maskieren
-  @ lsr r2, #0           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
-
-  @ Zweiter Opcode ist fertig.
-  @ Füge den gewünschten Register hinzu:
-  orr r3, r4
-  
-  pushda r3
-  bl reversekomma @ movw
-
-
-  ldr r1, =0xffff0000 @ High-Teil
-  and r0, r1
-  cmp r0, #0 @ Wenn der High-Teil Null ist, brauche ich keinen movt-Opcode mehr zu generieren.
-  beq 1f
-
-
-  ldr r3, =0xf2c00000  @ Opcode movt r0, #0
-
-  ldr r1, =0xF0000000  @ Bit 32 - 29
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #12           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
-
-  ldr r1, =0x08000000  @ Bit 28
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #1           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
-
-  ldr r1, =0x07000000  @ Bit 27 - 25
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #12          @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
-
-  ldr r1, =0x00FF0000  @ Bit 24 - 17
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #16          @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
-
-  @ Erster Opcode ist fertig.
-  @ Füge den gewünschten Register hinzu:
-  orr r3, r4
-
-  pushda r3
-  bl reversekomma @ movt
-
-1:pop {pc}
-*/
+1:pop {r0, r1, r2, r3, r4, pc}
 
 
 @ -----------------------------------------------------------------------------
@@ -339,42 +206,126 @@ callkommalang: @ ( Zieladresse -- ) Schreibt einen LANGEN Call-Befehl für does>
 @ -----------------------------------------------------------------------------
   @ Dies ist ein bisschen schwierig und muss nochmal gründlich optimiert werden.
   @ Schreibe einen ganz langen Sprung ins Dictionary !
+  @ Wichtig für <builds does> wo die Lückengröße vorher festliegen muss.
 
-  push {r0, r1, r2, r3, r4, r5, lr}
-  adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz, nicht soo wichtig. Müsste das sonst auch in execute einpflegen.
+  push {r0, r1, r2, r3, r4, lr}
+    @writeln "Callkommalang"
+  adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
 
   popda r0    @ Zieladresse holen
   mov r4, #0  @ Register r0 wählen
   bl movwkomma
   bl movtkomma
 
-  pushdaconst 0x4780 @ blx r0
-  bl hkomma
-  pop {r0, r1, r2, r3, r4, r5, pc}    
-  
+  b.n callkommakurz_intern
+@  pushdaconst 0x4780 @ blx r0
+@  bl hkomma
+@  pop {r0, r1, r2, r3, r4, pc}  
+
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "call," @ ( addr -- )
-callkomma:
-@ -----------------------------------------------------------------------------
+callkommakurz: @ ( Zieladresse -- )
+               @ Schreibt einen Call-Befehl je nach Bedarf.
+               @ Wird benötigt, wenn die Distanz für einen BL-Opcode zu groß ist.
+@ ----------------------------------------------------------------------------
   @ Dies ist ein bisschen schwierig und muss nochmal gründlich optimiert werden.
-  @ Schreibe einen ganz langen Sprung ins Dictionary !
+  @ Gedanke: Für kurze Call-Distanzen die BL-Opcodes benutzen.
 
   push {r0, r1, r2, r3, r4, lr}
-  adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz, nicht soo wichtig. Müsste das sonst auch in execute einpflegen.
+    @writeln "Callkommakurz"
+  adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
 
   pushdaconst 0 @ Register r0
   bl movwmovtkomma
+callkommakurz_intern:
   pushdaconst 0x4780 @ blx r0
   bl hkomma
   pop {r0, r1, r2, r3, r4, pc}  
 
 
 @ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "call," @ ( Zieladresse -- )
+callkomma:  @ Versucht einen möglichst kurzen Aufruf einzukompilieren. 
+            @ Je nachdem: bl ...                            (4 Bytes)
+            @             movw r0, ...              blx r0  (6 Bytes)
+            @             movw r0, ... movt r0, ... blx r0 (10 Bytes) 
+@ ----------------------------------------------------------------------------
+
+  push {r0, r1, r2, r3, lr}
+  mov r3, tos @ Behalte Sprungziel auf dem Stack
+  @ ( Zieladresse )
+
+  bl here
+  popda r0 @ Adresse-der-Opcodelücke
+  
+  subs r3, r0     @ Differenz aus Lücken-Adresse und Sprungziel bilden
+  subs r3, #4     @ Da der aktuelle Befehl noch läuft und es komischerweise andere Offsets beim ARM gibt.
+
+
+
+  @ 22 Bits für die Sprungweite mit Vorzeichen - 
+  @ also habe ich 21 freie Bits, das oberste muss mit dem restlichen Vorzeichen übereinstimmen. 
+
+  ldr r1, =0xFFC00001   @ 21 Bits frei
+  ands r1, r3
+  cmp r1, #0  @ Wenn dies Null ergibt, positive Distanz ok.
+  beq 1f
+
+  ldr r2, =0xFFC00000
+  cmp r1, r2
+  beq 1f      @ Wenn es gleich ist: Negative Distanz ok.
+    @ writeln "Normaler movw/movt-Aufruf"
+    pop {r0, r1, r2, r3, lr}
+    b.n callkommakurz
+1:
+
+
+
+  @ ( Zieladresse )
+  drop
+  @ ( -- )
+  @ BL: S | imm10 || imm11
+  @ Also 22 Bits, wovon das oberste das Vorzeichen sein soll.
+
+  @write "BL-Opcode, Distanz "
+  @  pushda r3
+  @  bl hexdot
+  @writeln " ok"
+
+  @ r3 enthält die Distanz:
+
+  lsrs r3, #1            @ Bottom bit ignored
+    ldr r0, =0xF000F800  @ Opcode-Template
+
+    ldr r1, =0x7FF       @ Bottom 11 bits of immediate
+    ands r1, r3
+    orrs r0, r1
+
+  lsrs r3, #11
+
+    ldr r1, =0x3FF       @ 10 more bits shifted to second half
+    ands r1, r3
+    lsls r1, #16
+    orrs r0, r1
+
+  lsrs r3, #10         
+
+    ands r1, r3, #1      @ Next bit, treated as sign, shifted into bit 26.
+    lsls r1, #26
+    orrs r0, r1
+
+  @ Opcode fertig in r0
+  pushda r0
+  bl reversekomma
+
+  pop {r0, r1, r2, r3, pc}
+
+
+@ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "inline," @ ( addr -- )
 inlinekomma:
 @ -----------------------------------------------------------------------------
-  push {lr}
+  push {r4, lr}
   @ Übernimmt eine Routine komplett und schreibt sie ins Dictionary.
   popda r0 @ Die Adresse der Routine, die eingefügt werden soll.
 
@@ -402,60 +353,53 @@ inlinekomma:
 2:adds r0, #2 @ Pointer weiterrücken
   b 1b 
 
-3:pop {pc}
+3:pop {r4, pc}
 
-  @ An der ersten Stelle wird geprüft: Ist es eine Routine mit pop {pc} oder mit bx lr am Ende ?
-
-/*
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "sucheende" @ ( addr -- addr )
-@ -----------------------------------------------------------------------------
-  push {lr}
-  popda r0
-  bl suchedefinitionsende
-  pushda r0
-  pop {pc}
-*/  
-
+@ An der ersten Stelle wird geprüft: Ist es eine Routine mit pop {pc} oder mit bx lr am Ende ?
 @ -----------------------------------------------------------------------------
 suchedefinitionsende: @ Rückt den Pointer in r0 ans Ende einer Definition vor.
 @ -----------------------------------------------------------------------------
         @ Suche wie in inline, nach pop {pc} oder bx lr.
-        push {r1, r3, r4}
+        push {r1, r2, r3}
 
-          mov  r3, #0xbd00 @ pop {pc}
-          movw r4, #0x4770 @ bx lr
+          mov  r2, #0xbd00 @ pop {pc}
+          movw r3, #0x4770 @ bx lr
 
-1:        ldrh r1, [r0] @ Hole die nächsten 16 Bits aus der Routine.
+1:        ldrh r1, [r0]  @ Hole die nächsten 16 Bits aus der Routine.
           adds r0, #2    @ Pointer Weiterrücken
 
-          cmp r1, r3 @ pop {pc}
+          cmp r1, r2  @ pop {pc}
           beq 2f
-          cmp r1, r4 @ bx lr
-          beq 2f
+          cmp r1, r3  @ bx lr
+          bne 1b
 
-          b 1b
-
-2:      pop {r1, r3, r4}
+2:      pop {r1, r2, r3}
         bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "literal," @ ( x -- )
-literalkomma:
+literalkomma: @ Nur r3 muss erhalten bleiben
 @ -----------------------------------------------------------------------------
-  push {r0, r1, r2, r3, r4, lr}
+  push {lr}
 
-  @ stmdb psp!, {tos}
-
-  pushdaconstw 0xf847
+  pushdaconstw 0xf847  @ stmdb psp!, {tos}
   bl hkomma
   pushdaconstw 0x6d04
   bl hkomma
 
+  @ Neuigkeit: Generiere movs-Opcode für sehr kleine Konstanten :-)
+  cmp tos, #0xFF
+  bhi 1f
+    @ Gewünschte Konstante passt in 8 Bits. 
+    orrs tos, #0x2600 @ movs r6, #imm8 mit Zero-Extend
+    bl hkomma
+    pop {pc}
+1:
+
   pushdaconst 6 @ Gleich in r6=tos legen
   bl movwmovtkomma
 
-  pop {r0, r1, r2, r3, r4, pc}  
+  pop {pc}  
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "ret," @ ( -- )
@@ -463,7 +407,7 @@ retkomma:
 @ -----------------------------------------------------------------------------
   @ Mache das mit pop {pc}
   pushdaconst 0xbd00 @ Opcode für pop {pc} schreiben
-  b hkomma
+  b.n hkomma
 
 @  : fac ( n -- n! )   1 swap  1 max  1+ 2 ?do i * loop ;
 @  : fac-rec ( acc n -- n! ) dup dup 1 = swap 0 = or if drop else dup 1 - rot rot * swap recurse then ; : facre ( n -- n! ) 1 swap fac-rec ;
@@ -486,11 +430,11 @@ fadenende_einsprungadresse: @ Kleines Helferlein spart Platz
   @ --> Codestartadresse, analog zur Routine in words
 
         @ Flagfeld
-        @adds r0, #4
+        @adds r0, #2
 
         @ Link
         @adds r0, #4
-        adds r0, #8
+        adds r0, #6
 
         ldrb r1, [r0] @ Länge des Strings holen
         adds r1, #1    @ Plus 1 Byte für die Länge
@@ -565,155 +509,26 @@ dodoes:
   pushda lr   @ Brauche den Link danach nicht mehr, weil ich über die in dem Wort das does> enthält gesicherte Adresse rückspringe
   subs tos, #1 @ Einen abziehen. Diese Adresse ist schon ungerade für Thumb-2, aber callkomma fügt nochmal eine 1 dazu. 
 
-  @ Dictionarypointer sichern
-  ldr r0, =Dictionarypointer
-  ldr r5, [r0] @ Alten Dictionarypointer auf jeden Fall bewahren
-
   bl fadenende_einsprungadresse
+
+    @ Dictionary-Pointer verbiegen:
+      @ Dictionarypointer sichern
+      ldr r2, =Dictionarypointer
+      ldr r3, [r2] @ Alten Dictionarypointer auf jeden Fall bewahren
+
   popda r1     @ r1 enthält jetzt die Codestartadresse der aktuellen Definition.  
-  adds r1, #2   @ Am Anfang sollte das neudefinierte Wort ein push {lr} enthalten, richtig ?
-  str r1, [r0] @ Dictionarypointer umbiegen
+  adds r1, #2  @ Am Anfang sollte das neudefinierte Wort ein push {lr} enthalten, richtig ?
 
-  @push {r0, r5} Werden in Callkommalamg gesichert.
-  bl callkommalang @ Achtung ! Später im Flash sind hier auch "kleine" Adressen möglich, dann muss ich das movw/movt-Paar erzwingen. Keine Abkürzungen erlaubt ! Callkommalang schreibt immer das movw-movt-Paar, auch wenn es kürzer gehen könnte.
-  @pop {r0, r5}
+      str r1, [r2] @ Dictionarypointer umbiegen
+  bl callkommalang @ Aufruf einfügen
+      str r3, [r2] @ Dictionarypointer wieder zurücksetzen.
 
-  str r5, [r0] @ Alten Dictionarypointer zurückschreiben
-  
   bl smudge
   pop {pc}
 
 
-
-
-/*
-dodoes:
-  ; The call to dodoes never returns.
-  ; Instead, it compiles a call to the part after its invocation into the dictionary
-  ; and exits through two call layers.
-
-  ; Have a close look on the stacks:
-  ; ( ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself )
-
-  push &DictionaryPointer ; Push Dictionary pointer before changing it as , is the easiest way handle writing code to flash or ram.
-  ; ( ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself Old-Dictionary-Pointer )
-  ; Fetch address to where a call should be inserted:
-  call #Fadenende_Einsprungadresse ; Call into does>-part should be inserted into CURRENT definition. Calculate pointer.
-  ; ( Place-to-insert-call-opcode ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself Old-Dictionary-Pointer )
-  mov @r4, &DictionaryPointer ; This is the place to insert the call-opcode !
-  mov 2(sp), @r4  ; Target-Address for call-opcode is return address of dodoes which points to the does>-part of defining word.  
-  ; ( Call-Target-Address ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself Old-Dictionary-Pointer )
-  call #callkomma ; Write call into dictionary
-  ; ( ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself Old-Dictionary-Pointer )
-  pop &DictionaryPointer ; Restore dictionary pointer.
-  ; ( ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself )
-  incd sp ; Remove one return layer
-  ; ( ) ( R: Return-of-defining-definition-that-called-does> )
-  jmp smudge ; Render current definition visible and Return
-*/
-
-
-/*
-;------------------------------------------------------------------------------
-  Wortbirne Flag_visible_inline, "does>"
-does: ; Gives freshly defined word a special action.
-      ; Has to be used together with <builds !
-;------------------------------------------------------------------------------
-    ; At the place where does> is used, a jump to dodoes is inserted and
-    ; after that a R> to put the address of the definition entering the does>-part
-    ; on datastack. This is a very special implementation !
-
-    call #dodoes
-    r_from        ; This makes for the inline R> in definition of defining word !
-  ret ; Very important as delimiter as does> itself is inline.
-
-dodoes:
-  ; The call to dodoes never returns.
-  ; Instead, it compiles a call to the part after its invocation into the dictionary
-  ; and exits through two call layers.
-
-  ; Have a close look on the stacks:
-  ; ( ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself )
-
-  push &DictionaryPointer ; Push Dictionary pointer before changing it as , is the easiest way handle writing code to flash or ram.
-  ; ( ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself Old-Dictionary-Pointer )
-  ; Fetch address to where a call should be inserted:
-  call #Fadenende_Einsprungadresse ; Call into does>-part should be inserted into CURRENT definition. Calculate pointer.
-  ; ( Place-to-insert-call-opcode ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself Old-Dictionary-Pointer )
-  mov @r4, &DictionaryPointer ; This is the place to insert the call-opcode !
-  mov 2(sp), @r4  ; Target-Address for call-opcode is return address of dodoes which points to the does>-part of defining word.  
-  ; ( Call-Target-Address ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself Old-Dictionary-Pointer )
-  call #callkomma ; Write call into dictionary
-  ; ( ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself Old-Dictionary-Pointer )
-  pop &DictionaryPointer ; Restore dictionary pointer.
-  ; ( ) ( R: Return-of-defining-definition-that-called-does>  Return-of-dodoes-itself )
-  incd sp ; Remove one return layer
-  ; ( ) ( R: Return-of-defining-definition-that-called-does> )
-  jmp smudge ; Render current definition visible and Return
-
-
-;------------------------------------------------------------------------------
-  Wortbirne Flag_visible_inline, "does>"
-does: ; Fügt dem gerade erstellten Wort eine besondere Aufgabe hinzu.
-;------------------------------------------------------------------------------
-    ; An die Stelle, wo does> aufgerufen wird, wird ein Sprung in dodoes eingefügt
-    ; und gleich dahinter inline ein R> um die Parameteradresse aus dem Einsprung
-    ; auf den Datenstack zu legen. Dieser Teil wird nur ein einziges Mal beim
-    ; Eincompilieren eines neuen Defining-Wortes angesprungen.
-    call #dodoes
-    r_from         ; Dies ergibt das inline >R im Wort.
-  ret ; Ganz wichtig, da does> jetzt inline ist !
-
-dodoes:
-  ; Ich habe nun ein Wort vorbereitet, das alle möglichen Daten enthalten kann.
-  ; Die Definition ist fertig und abgeschlossen, nur die Call-Adresse fehlt noch.
-
-  ; Doch wohin soll das call springen ? Auf den Teil, der nach does> kommt.
-  ; Den kann ich über die Rücksprungadresse finden.
-  ; Da does> der Ausführung ein Ende setzt, nehme ich die Rücksprungadresse,
-  ; die in das Call eingefügt wird komplett vom Stack.
-  ; Das hat in etwa die Wirkung, als würde das Wort, was does> aufgerufen hat
-  ; selbst ein ret ausführen.
-
-  ; Gucke mal in den Stack:
-  ; ( Rücksprung-des-Wortes-das-does>-aufgerufen-hat  Rücksprungadresse-von-does>-selbst )
-
-  push &DictionaryPointer
-  ; ( Rücksprung-des-Wortes-das-does>-aufgerufen-hat  Rücksprungadresse-von-does>-selbst AlterDictionaryPointer )
-  ; Hole die Adresse, an die die Call-Adresse eingefügt werden soll:
-  call #Fadenende_Einsprungadresse   ; Das aktuelle Wort soll den does>-Teil-Call bekommen. Berechne aus dem Fadenende die Einsprungstelle
-  mov @r4, &DictionaryPointer ; An dieser Stelle soll der Call-Befehl eingefügt werden !
-  mov 2(sp), @r4 ; Zieladresse für den Call-Befehl auf den Datenstack legen
-  call #callkomma ; Call-Befehl mit Zieladresse einschreiben
-  pop &DictionaryPointer
-  ; ( Rücksprung-des-Wortes-das-does>-aufgerufen-hat  Rücksprungadresse-von-does>-selbst)
-  incd sp ; Rücksprungadresse-von-does>-selbst vom Returnstack schmeißen
-  ; ( Rücksprung-des-Wortes-das-does>-aufgerufen-hat )
-  jmp smudge ; Markiere das neue Wort als Ausführbereit
-
-  ; Das Call, dessen Adresse nachträglich eingefügt wurde, kehrt übringens nie zurück.
-  ; Die Rücksprungadresse wird als Zeiger auf das Parameterfeld eines tatsächlich definierten Wortes
-  ; verwendet und dort inline vom Returnstack auf den Datenstack geschoben.
-  ; Das ret am Ende der Routine nach does> durchspringt ebenfalls eine Ebene.
-
-;------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "<builds"
-builds: ; Beginnt ein Defining-Wort.
-        ; Dazu lege ich ein neues Wort an, lasse eine Lücke für den Call-Befehl
-        ; Keine Strukturkennung
-;------------------------------------------------------------------------------
-  call #create  ; Neues Wort wird erzeugt
-  pushda #4 ; Hier kommt ein Call-Befehl hinein, aber ich weiß die Adresse noch nicht.
-  jmp allot ; Lasse also eine passende Lücke frei !
-
-*/
-
-
-
-
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "<builds"
-@builds: 
         @ Beginnt ein Defining-Wort.
         @ Dazu lege ich ein neues Wort an, lasse eine Lücke für den Call-Befehl
         @ Keine Strukturkennung
@@ -779,9 +594,8 @@ builds: ; Beginnt ein Defining-Wort.
   ldr r1, [r0]
   cmp r1, psp
   beq 1f
-    writeln " Stack not balanced."
-    b quit     
-1: @ writeln "Stack balanced, ok"
+    Fehler_Quit " Stack not balanced."
+1: @ Stack balanced, ok
 
   pushdaconst 0xbd00 @ Opcode für pop {pc} schreiben
   bl hkomma

@@ -24,35 +24,42 @@
 	
 .text   /* Hier beginnt das Vergnügen mit der Stackadresse und der Einsprungadresse */
 
-
-.macro literal register, zahl
-  movw \register, #\zahl & 0x0000FFFF
-  movt \register, (\zahl & 0xFFFF0000)>>16
-.endm
-
 .macro write Meldung
-  push {lr}
   bl dotgaensefuesschen	
 	.byte 9f - 8f         @ Compute length of name field.
 8:	.ascii "\Meldung"
 9:	.p2align 1
-  pop {lr}
 .endm
 
 .macro writeln Meldung
-  push {lr}
   bl dotgaensefuesschen 
         .byte 9f - 8f         @ Compute length of name field.
 8:      .ascii "\Meldung\n"
 9:      .p2align 1
-  pop {lr}
 .endm
+
+.macro Fehler_Quit Meldung
+  bl dotgaensefuesschen 
+        .byte 9f - 8f         @ Compute length of name field.
+8:      .ascii "\Meldung\n"
+9:      .p2align 1
+  b quit
+.endm
+
+.macro Fehler_Quit_n Meldung
+  bl dotgaensefuesschen 
+        .byte 9f - 8f         @ Compute length of name field.
+8:      .ascii "\Meldung\n"
+9:      .p2align 1
+  b.n quit
+.endm
+
+
 
 @ -----------------------------------------------------------------------------
 @ Interruptvektortabelle
 .include "vectors.s"
 @ -----------------------------------------------------------------------------
-
 
 @ Zweiter Versuch, den Datenstack zu implementieren, mit TOS im Register.
 @ Achtung: Diese Register sind recht fest eingebaut, nicht versuche, diese auszustauschen.
@@ -148,7 +155,7 @@ y .req r2
 .macro Wortbirne Flags, Name
 	.p2align 1        @ Auf gerade Adressen ausrichten
         .set Neu, .
-        .word \Flags      @ Flags setzen, diesmal 4 Bytes ! Wir haben Platz und Ideen :-)
+        .hword \Flags      @ Flags setzen, diesmal 4 Bytes ! Wir haben Platz und Ideen :-)
         .word Latest      @ Link einfügen
         .set Latest, Neu
 	.byte 8f - 7f     @ Länge des Namensfeldes berechnen
@@ -157,7 +164,7 @@ y .req r2
 .endm
 
 @ Zuerst die Teile, die keine Aufrufe untereinander haben:
-  .include "stackjugglers.s"  
+  .include "stackjugglers.s" 
   .include "logic.s"
   .include "comparisions.s"
   .include "memory.s"
@@ -170,15 +177,15 @@ y .req r2
   .include "deepinsight.s"
   .ltorg @ Mal wieder Konstanten schreiben
   .include "compiler.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "compiler-flash.s"
-
-  .ltorg
-
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "controlstructures.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "doloop.s"
   .include "case.s"
-  .ltorg @ Mal wieder Konstanten schreiben
   .include "token.s"
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "numberstrings.s"
   .include "interpreter.s"
   .include "interrupts.s"
@@ -249,14 +256,14 @@ Reset_mit_Inhalt:
         beq 1f
           @ Gefunden !
           bl execute
-          b quit_innenschleife
-1:      b quit
+          b.n quit_innenschleife
+1:
+  drop @ Die 0-Adresse von find. Wird hier heruntergeworfen, damit der Startwert AFFEBEEF erhalten bleibt !
+  b.n quit
 
 init_name: .byte 4, 105, 110, 105, 116, 0 @ "init"
 
-
 .ltorg
-
 
 @ -----------------------------------------------------------------------------
 @ Ram-Speicherkarte

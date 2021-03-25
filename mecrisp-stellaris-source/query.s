@@ -30,7 +30,7 @@ query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
 
         @ Normal loslegen
         ldr     r1, =Eingabepuffer @ Pufferadresse holen
-        mov     r2, #0            @ Momentaner Pufferfüllstand Null
+        movs    r2, #0             @ Momentaner Pufferfüllstand Null
 
 1:      @ Queryschleife
         bl key              @ Tastendruck holen
@@ -39,7 +39,9 @@ query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
         bhs     2f                @ Space wird hier einfach so mit aufgenommen.
         
         @ Steuerzeichen bearbeiten.
-        cmp     r0, #10           @ Bei Enter sind wir fertig.
+        cmp     r0, #10           @ Bei Enter sind wir fertig - LF
+        beq     3f
+        cmp     r0, #13           @ Bei Enter sind wir fertig - CR
         beq     3f
 
         cmp     r0, #8            @ Backspace

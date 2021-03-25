@@ -13,3 +13,15 @@
   - First interrupt handler for Systick-Timer
   - Lots of small changes
   - Ledcomm ported
+
+15.06.2013, Matthias Koch, Mecrisp-Stellaris 0.3 experimental:
+
+  - Recognizes both LF and CR as line ending
+  - Uses hardware FIFO buffer for serial communication
+  - Enables GPIO hardware on startup
+  - Tidied up internal register usage
+  - Faster interrupt entry
+  - Fetch-Modify-Store definitions are now interrupt safe
+  - Mecrisp-Stellaris now generates smaller code
+  - Tidied up debug messages
+  - Lots of small changes

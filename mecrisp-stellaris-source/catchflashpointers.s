@@ -53,8 +53,8 @@ SucheFlashPointer_Hangelschleife:
 
   @ Adresse in r0 zeigt auf:
   @   --> Flagfeld
-  ldr r1, [r0]  @ Aktuelle Flags lesen
-  adds r0, #4
+  ldrh r1, [r0]  @ Aktuelle Flags lesen
+  adds r0, #2
 
   @   --> Link
   ldr r2, [r0]  @ Aktuellen Link lesen
@@ -63,13 +63,14 @@ SucheFlashPointer_Hangelschleife:
   @   --> Namen
   @ Prüfe für die Rambelegung die Flags der aktuellen Definition:
 
-  cmp r1, #-1   @ Flag_invisible ? Überspringen !
+  movw r3, #0xFFFF
+  cmp r1, r3   @ Flag_invisible ? Überspringen !
   beq Sucheflashpointer_Speicherbelegung_fertig
     @ Dies Wort ist sichtbar. Prüfe, ob es Ram-Speicher anfordert und belegt.
   @  write " Sichtbar: Prüfe die Speicherbelegung"
     tst r1, #Flag_ramallot
     beq Sucheflashpointer_Speicherbelegung_fertig @ Benötigt doch kein RAM.
-      writeln "Speicher gewünscht !"
+      @ writeln "Speicher gewünscht !"
       @ Die Flags werden später nicht mehr gebraucht.
       ands r1, #0x0F @ Das unterste Nibble maskieren
 
@@ -106,7 +107,7 @@ Sucheflashpointer_Speicherbelegung_fertig:
   mov r0, r2
 
   @ Prüfe, ob die Namenslänge an der Stelle etwas anderes als $FF ist:
-  adds r2, #8 @ Flags und Link überlegen
+  adds r2, #6 @ Flags und Link überlegen
   ldrb r2, [r2]
   cmp r2, #0xFF @ Ist an der Stelle der Namenslänge $FF ? Dann ist das Fadenende erreicht.
   beq SucheFlashPointer_Fadenende_gefunden
@@ -122,19 +123,19 @@ SucheFlashPointer_Fadenende_gefunden:
   ldr r0, =ZweitFadenende
   str r4, [r0] @ Das Fadenende für den Flash setzen.
 
-  write "Fadenende im Flash: "
-  pushda r4
-  bl hexdot
-  writeln " gefunden."
+@  write "Fadenende im Flash: "
+@  pushda r4
+@  bl hexdot
+@  writeln " gefunden."
 
 
   ldr r0, =VariablenPointer
   str r5, [r0]
 
-  write "Stand des Variablenpointers: "
-  pushda r5
-  bl hexdot
-  writeln " gefunden."
+@  write "Stand des Variablenpointers: "
+@  pushda r5
+@  bl hexdot
+@  writeln " gefunden."
 
 
   @ Mache mich auf die Suche nach dem Dictionarypointer im Flash:
@@ -160,8 +161,8 @@ SucheFlashPointer_Fadenende_gefunden:
   ldr r1, =ZweitDictionaryPointer
   str r0, [r1]
 
-  write "Dictionarypointer im Flash: "
-  pushda r0
-  bl hexdot
-  writeln " gefunden."
+@  write "Dictionarypointer im Flash: "
+@  pushda r0
+@  bl hexdot
+@  writeln " gefunden."
 

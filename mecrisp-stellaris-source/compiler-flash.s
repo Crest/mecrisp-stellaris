@@ -45,13 +45,12 @@ smudge:
     ldr r3, =0xFFFF
     cmp r2, r3
     bne 1f
-      writeln "Füge in Smudge eine Enderkennungs-Null ein."
+      @ writeln "Füge in Smudge eine Enderkennungs-Null ein."
       pushdaconst 0
-      bl ckomma
+      bl hkomma
 1:  @ Okay, Ende gut, alles gut.
 
     @ Brenne die gesammelten Flags:
-    @writeln "Smudge-Flash"
     ldr r0, =FlashFlags
     ldr r0, [r0]
     pushda r0
@@ -61,16 +60,12 @@ smudge:
 
     @ Dictionary-Pointer verbiegen:
       @ Dictionarypointer sichern
-      ldr r4, =Dictionarypointer
-      ldr r5, [r4] @ Alten Dictionarypointer auf jeden Fall bewahren
+      ldr r2, =Dictionarypointer
+      ldr r3, [r2] @ Alten Dictionarypointer auf jeden Fall bewahren
 
-      str r1, [r4] @ Dictionarypointer umbiegen
-  
-      push {r4, r5, lr}
-      bl komma          @ Befehl einfügen. Muss ich später auf Komma umbiegen.
-      pop {r4, r5, lr}
-
-      str r5, [r4] @ Dictionarypointer wieder zurücksetzen.
+      str r1, [r2] @ Dictionarypointer umbiegen
+      bl hkomma     @ Flags einfügen
+      str r3, [r2] @ Dictionarypointer wieder zurücksetzen.
 
     pop {pc}
 
@@ -113,13 +108,14 @@ setflags_ram:
   ldr r0, =Fadenende
   ldr r0, [r0]
 
-  ldr r1, [r0] @ Flags des zuletzt definierten Wortes holen
-  cmp r1, #-1
+  ldrh r1, [r0] @ Flags des zuletzt definierten Wortes holen
+  movw r3, 0xFFFF
+  cmp r1, r3
   ite eq
     moveq r1, r2 @ Direkt setzen, falls an der Stelle noch -1 steht
     orrne r1, r2 @ Hinzuverodern, falls schon Flags da sind
 
-  str r1, [r0]
+  strh r1, [r0]
   pop {pc}
 
 @ -----------------------------------------------------------------------------
@@ -185,170 +181,6 @@ variable_ram:
   bl smudge
   pop {pc}
 
- 
-/*
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "c," @ ( x -- ) 
-ckomma: @ Fügt 8 Bits an das Dictionary an.
-@ -----------------------------------------------------------------------------
-  push {r0, r1, r2, lr}
-  ldr r0, =Dictionarypointer
-  ldr r1, [r0] @ Hole den Dictionarypointer
-
-  popda r2
-  strb r2, [r1] @ Schreibe das Halbword in das Dictionary
-
-  pushdaconst 1
-  bl allot
-
-  pop {r0, r1, r2, pc}
-
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "h," @ ( x -- ) 
-hkomma: @ Fügt 16 Bits an das Dictionary an.
-@ -----------------------------------------------------------------------------
-  push {r0, r1, r2, lr}
-  ldr r0, =Dictionarypointer
-  ldr r1, [r0] @ Hole den Dictionarypointer
-
-  popda r2
-  strh r2, [r1] @ Schreibe das Halbword in das Dictionary
-
-  pushdaconst 2
-  bl allot
-
-  pop {r0, r1, r2, pc}
-*/
-
-
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "c," @ ( x -- ) 
-ckomma: @ Fügt 8 Bits an das Dictionary an.
-@ -----------------------------------------------------------------------------
-
- @ push {lr}
- @ write "ckomma: " @ Mal gucken, was hier ankommt.
- @ bl dots
- @ pop {lr}
-
-
-  push {r0, r1, r2, r3, r4, r5, lr}
-  ldr r0, =Dictionarypointer
-  ldr r1, [r0] @ Hole den Dictionarypointer
-
-  ldr r2, =Backlinkgrenze
-  cmp r1, r2
-  bhs ckomma_ram @ Befinde mich im Ram. Schalte um !
-
-  @ ckomma für Flash:
-  pushda r1 @ Adresse auch auf den Stack
-  bl c_flashkomma
-
-  pushdaconst 1
-  bl allot
-
-  pop {r0, r1, r2, r3, r4, r5, pc}
-
-
-ckomma_ram:
-  popda r2 @ Inhalt holen
-  strb r2, [r1] @ Schreibe das Halbword in das Dictionary
-
-  pushdaconst 1
-  bl allot
-
-  pop {r0, r1, r2, r3, r4, r5, pc}
-
-
-
-
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "h," @ ( x -- ) 
-hkomma: @ Fügt 16 Bits an das Dictionary an.
-@ -----------------------------------------------------------------------------
-  push {r0, r1, r2, r3, r4, r5, lr}
-  ldr r0, =Dictionarypointer
-  ldr r1, [r0] @ Hole den Dictionarypointer
-
-  ldr r2, =Backlinkgrenze
-  cmp r1, r2
-  bhs hkomma_ram @ Befinde mich im Ram. Schalte um !
-
-  @ hkomma für Flash:
-  pushda r1 @ Adresse auch auf den Stack
-  bl h_flashkomma
-
-  pushdaconst 2
-  bl allot
-
-  pop {r0, r1, r2, r3, r4, r5, pc}
-
-
-hkomma_ram:
-  popda r2 @ Inhalt holen
-  strh r2, [r1] @ Schreibe das Halbword in das Dictionary
-
-  pushdaconst 2
-  bl allot
-
-  pop {r0, r1, r2, r3, r4, r5, pc}
-
-
-
-/*
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "," @ ( x -- ) 
-komma: @ Fügt 32 Bits an das Dictionary an.
-@ -----------------------------------------------------------------------------
-  ldr r0, =Dictionarypointer
-  ldr r1, [r0] @ Hole den Dictionarypointer
-
-  popda r2
-  str r2, [r1] @ Schreibe das Halbword in das Dictionary
-
-  adds r1, #4 @ Erhöhe den Dictionarypointer
-  str r1, [r0] @ und schreibe ihn zurück
-
-  bx lr
-*/
-
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "," @ ( x -- ) 
-komma: @ Fügt 32 Bits an das Dictionary an, in zwei Stücken, damit es nicht auf 4 gerade sein muss.
-@ -----------------------------------------------------------------------------
-  push {r0, r1, r2, lr}
-
-  dup
-  ldr r0, =0xffff @ Low-Teil zuerst - Little Endian ! Außerdem stimmen so die Linkfelder.
-  ands r0, tos
-  bl hkomma
-
-  ldr r0, =0xffff0000 @ High-Teil danach
-  ands r0, tos
-  lsr tos, #16
-  bl hkomma
-
-  pop {r0, r1, r2, pc}
-
-
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "><," @ ( x -- ) 
-reversekomma: @ Fügt 32 Bits an das Dictionary an, in zwei Stücken, damit es nicht auf 4 gerade sein muss.
-@ -----------------------------------------------------------------------------
-  push {r0, r1, r2, lr}
-
-  dup
-  ldr r0, =0xffff0000 @ High-Teil danach
-  ands r0, tos
-  lsrs tos, #16
-  bl hkomma
-
-  ldr r0, =0xffff @ Low-Teil zuerst - Little Endian ! Außerdem stimmen so die Linkfelder.
-  ands r0, tos
-  bl hkomma
-
-  pop {r0, r1, r2, pc}
-
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "align," @ ( -- ) 
 alignkomma: @ Macht den Dictionarypointer gerade
@@ -360,68 +192,125 @@ alignkomma: @ Macht den Dictionarypointer gerade
   beq 1f
 
   pushdaconst 0
-  b ckomma
+  b.n ckomma
 
 1: @ Fertig.
   bx lr
 
-/* Wird nicht benötigt, da die ARM-Cortex-Chips auch an nicht-ausgerichteten Adressen lesen und schreiben können.
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "align4," @ ( -- ) 
-align4komma: @ Macht den Dictionarypointer auf vier gerade
+  Wortbirne Flag_visible, "c," @ ( x -- ) 
+ckomma: @ Fügt 8 Bits an das Dictionary an.
 @ -----------------------------------------------------------------------------
-  push {lr}
-  bl alignkomma @ Schonmal gerade machen
-  pop {lr}
-
+  push {lr} @ Wird intern nur von string, benutzt.
   ldr r0, =Dictionarypointer
   ldr r1, [r0] @ Hole den Dictionarypointer
 
-  ands r1, #2
-  beq 1f
-    @writeln "align4, arbeitet"
-    pushdaconst 0
-    b hkomma
+  ldr r2, =Backlinkgrenze
+  cmp r1, r2
+  bhs.n ckomma_ram @ Befinde mich im Ram. Schalte um !
 
-1: @ Fertig.
-  bx lr
+  @ ckomma für Flash:
+  pushda r1 @ Adresse auch auf den Stack
+  bl c_flashkomma
+  b.n ckomma_fertig
 
-*/
+ckomma_ram:
+  popda r2 @ Inhalt holen
+  strb r2, [r1] @ Schreibe das Halbword in das Dictionary
+
+ckomma_fertig:
+  pushdaconst 1
+  bl allot
+  pop {pc}
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "h," @ ( x -- ) 
+hkomma: @ Fügt 16 Bits an das Dictionary an.
+@ -----------------------------------------------------------------------------
+  push {r0, r1, r2, r3, lr}
+  ldr r0, =Dictionarypointer
+  ldr r1, [r0] @ Hole den Dictionarypointer
+
+  ldr r2, =Backlinkgrenze
+  cmp r1, r2
+  bhs hkomma_ram @ Befinde mich im Ram. Schalte um !
+
+  @ hkomma für Flash:
+  pushda r1 @ Adresse auch auf den Stack
+  bl h_flashkomma
+
+  b.n hkomma_fertig
+
+hkomma_ram:
+  popda r2 @ Inhalt holen
+  strh r2, [r1] @ Schreibe das Halbword in das Dictionary
+
+hkomma_fertig:
+  pushdaconst 2
+  bl allot
+
+  pop {r0, r1, r2, r3, pc}
+
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "," @ ( x -- ) 
+komma: @ Fügt 32 Bits an das Dictionary an, in zwei Stücken, damit es nicht auf 4 gerade sein muss.
+@ -----------------------------------------------------------------------------
+  push {lr}
+  dup
+  bl hkomma @ Low-Teil zuerst - Little Endian ! Außerdem stimmen so die Linkfelder.
+
+  lsrs tos, #16 @ High-Teil danach
+  bl hkomma
+  pop {pc}
+
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "><," @ ( x -- ) 
+reversekomma: @ Fügt 32 Bits an das Dictionary an, in zwei Stücken, damit es nicht auf 4 gerade sein muss.
+@ -----------------------------------------------------------------------------
+  push {lr}
+  dup
+  lsrs tos, #16 @ High-Teil danach
+  bl hkomma
+
+  bl hkomma @ Low-Teil zuerst - Little Endian ! Außerdem stimmen so die Linkfelder.
+  pop {pc}
+
+
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "string," @ ( addr -- ) 
 stringkomma: @ Fügt ein String an das Dictionary an
 @ -----------------------------------------------------------------------------
-        @ Wie type, nur ins Dictionary.
-        push    {r0, r1, r3, lr}
-        popda r0
+   push {r0, r1, r2, lr}
+   @ Schreibt einen String in 16-Bit-Happen ins Dictionary
 
-        mov     r3, r0
-        @ r3 enthält die Stringadresse.
-        @ Hole die auszugebende Länge in r1
-        ldrb    r1, [r3]
+   popda r0      @ Hole die Stringadresse
+   ldrb r1, [r0] @ Hole die auszugebende Länge in r2
+   adds r1, #1   @ Ein Byte mehr ausgeben, das Längenbyte zählt mit
 
-          push {r0, r1, r3}
-          pushda r1
-          bl ckomma @ Stringlänge schreiben
-          pop {r0, r1, r3}
+   @ Gib nun ab der Adresse r0 so viele Bytes aus, wie in r1 registriert sind.
+1: @ Zuerst in Zweierblöcken voranschreiten:
+   cmp r1, #2
+   blo 2f
 
-        @ Wenn nichts da ist, bin ich fertig.
-        cmp     r1, #0
-        beq     2f
+   ldrh r2, [r0] @ Zwei Bytes holen
+   pushda r2     @   und ins Dictionary schreiben
+   bl hkomma
 
-        @ Es ist etwas zum Tippen da !
-1:      adds     r3, #1   @ Adresse um eins erhöhen
-        ldrb    r0, [r3] @ Zeichen holen
-        pushda r0
-          push {r0, r1, r3}
-          bl ckomma     @ Zeichen einfügen
-          pop {r0, r1, r3}
-        subs    r1, #1   @ Ein Zeichen weniger
-        bne     1b
+   adds r0, #2 @ Pointer weiterrücken
+   subs r1, #2 @ Zwei Zeichen weniger
+   beq 3f      @ Null erreicht ? Fertig !
+   b 1b
 
-2:      bl alignkomma @ Dictionarypointer wieder gerade machen
-        pop     {r0, r1, r3, pc}
+2: @ Ein Zeichen übrig:
+   ldrb r2, [r0] @ Ein Byte holen, der Rest des Registers wird automatisch ausgenullt
+   pushda r2     @ Little Endian sei Dank :-)
+   bl hkomma
+
+3: @ Fertig !
+   pop {r0, r1, r2, pc}
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "allot" @ Erhöht den Dictionaryzeiger, schafft Platz !
@@ -433,7 +322,7 @@ allot:  @ Überprüft auch gleich, ob ich mich noch im Ram befinde.
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-  bhs allot_ram @ Befinde mich im Ram. Schalte um !
+  bhs.n allot_ram @ Befinde mich im Ram. Schalte um !
 
   @ Allot-Flash:
   popda r2    @ Gewünschte Länge
@@ -442,10 +331,8 @@ allot:  @ Überprüft auch gleich, ob ich mich noch im Ram befinde.
   ldr r2, =FlashDictionaryEnde
  
   cmp r1, r2
-  blo allot_ok
-    writeln "Flash full"
-    b quit
-
+  blo.n allot_ok
+    Fehler_Quit "Flash full"
 
   @ Allot-Ram:
 allot_ram:
@@ -457,60 +344,12 @@ allot_ram:
   ldr r2, [r2]
 
   cmp r1, r2
-  blo allot_ok
-    writeln "Ram full"
-    b quit
+  blo.n allot_ok
+    Fehler_Quit "Ram full"
 
 allot_ok: @ Alles paletti, es ist noch Platz da !
   str r1, [r0]
   bx lr
-
-/*
-;------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "allot" ; Erhöht den Dictionaryzeiger, schafft Platz !
-allot:  ; Überprüft auch gleich, ob ich mich noch im Ram befinde.
-        ; Ansonsten verweigtert Allot seinen Dienst.
-;------------------------------------------------------------------------------
-  push r10
-  mov &DictionaryPointer, r10
-  add @r4+, r10
-
-  ifdef flashdictionaryeinbinden
-
-  cmp #nBacklinkgrenze, &DictionaryPointer
-  jhs +
-
-  ifdef ramverwaltungeinbinden
-    cmp &VariablenPointer, r10
-  else
-    cmp #nRamDictionaryEnde, r10
-  endif
-  jlo ++  ; Solange der DictionaryPointer innerhalb des RAMs ist, ist alles okay.
-          ; Oder außerhalb des Variablenbereichs
-  writeln " Ram full"
-  pop r10
-  jmp quit
-
-+ cmp #nFlashDictionaryEnde, r10
-  jlo +  ; Solange der DictionaryPointer innerhalb des RAMs ist, ist alles okay.
-  writeln " Flash full"
-  pop r10
-  jmp quit
-
-  else
-
-  cmp #nRamDictionaryEnde, r10
-  jlo +  ; Solange der DictionaryPointer innerhalb des RAMs ist, ist alles okay.
-  writeln " Ram full"
-  pop r10
-  jmp quit
-
-  endif
-
-+ mov r10, &DictionaryPointer
-  pop r10
-  ret
-*/
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "compiletoram"
@@ -521,7 +360,7 @@ allot:  ; Überprüft auch gleich, ob ich mich noch im Ram befinde.
 
   ldr r1, =Backlinkgrenze
   cmp r0, r1
-  blo Zweitpointertausch @ Befinde mich im Flash. Schalte um !
+  blo.n Zweitpointertausch @ Befinde mich im Flash. Schalte um !
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -533,12 +372,11 @@ allot:  ; Überprüft auch gleich, ob ich mich noch im Ram befinde.
 
   ldr r1, =Backlinkgrenze
   cmp r0, r1
-  bhs Zweitpointertausch @ Befinde mich im Ram. Schalte um !
+  bhs.n Zweitpointertausch @ Befinde mich im Ram. Schalte um !
   bx lr
 
 
 Zweitpointertausch:
-  @writeln "Zweitpointertausch"
   @ Hier fehlt noch eine Probe, ob ich nicht schon im Ram bin !
 
   ldr r0, =Fadenende
@@ -561,8 +399,10 @@ Zweitpointertausch:
   ldr r0, =VariablenPointer
   ldr r0, [r0]
   cmp r3, r0
-  blo 1f 
+  blo 1f
+   push {lr} 
    writeln " Variables collide with dictionary"
+   pop {lr}
 1:bx lr
 
 @ -----------------------------------------------------------------------------
@@ -583,8 +423,7 @@ create: @ Nimmt das nächste Token aus dem Puffer,
   bne 1f
 
     @ Token ist leer. Brauche Stacks nicht zu putzen.
-    writeln " Create needs name !"
-    b quit
+    Fehler_Quit " Create needs name !"
 
 1:@ Tokenname ist okay.
   @ Prüfe, ob er schon existiert.
@@ -631,12 +470,8 @@ create: @ Nimmt das nächste Token aus dem Puffer,
   movs r1, #Flag_visible
   str r1, [r0]  @ Flags vorbereiten
 
-  pushdaconst 4 @ Lücke für die Flags lassen
+  pushdaconst 6 @ Lücke für die Flags und Link lassen
   bl allot
-
-  @ Link:
-  pushdaconst 4 @ Lücke für den Link lassen
-  bl allot  
   
   swap
   bl stringkomma @ Den Namen einfügen
@@ -648,9 +483,9 @@ create: @ Nimmt das nächste Token aus dem Puffer,
   ldr r0, =Fadenende @ Hole das aktuelle Fadenende
   ldr r1, [r0]
 
-  adds r1, #4 @ Flag-Feld überspringen
+  adds r1, #2 @ Flag-Feld überspringen
 
-  ldr r2, [r1] @ Inhalt des Flag-Feldes holen
+  ldr r2, [r1] @ Inhalt des Link-Feldes holen
   cmp r2, #-1  @ Ist der Link ungesetzt ?
   bne 1f
 
@@ -658,17 +493,14 @@ create: @ Nimmt das nächste Token aus dem Puffer,
     @writeln "Link einfügen"
     @ Dictionary-Pointer verbiegen:
       @ Dictionarypointer sichern
-      ldr r4, =Dictionarypointer
-      ldr r5, [r4] @ Alten Dictionarypointer auf jeden Fall bewahren
-
-      str r1, [r4] @ Dictionarypointer umbiegen
-  
-      push {r0, r4, r5, lr}
+      ldr r2, =Dictionarypointer
+      ldr r3, [r2] @ Alten Dictionarypointer auf jeden Fall bewahren
+      str r1, [r2] @ Dictionarypointer umbiegen
       dup @ ( Neue-Linkadresse Neue-Linkadresse )
-      bl komma          @ Befehl einfügen. Muss ich später auf Komma umbiegen.
-      pop {r0, r4, r5, lr}
+      bl komma     @ Link einfügen
+      str r3, [r2] @ Dictionarypointer wieder zurücksetzen.
 
-      str r5, [r4] @ Dictionarypointer wieder zurücksetzen.
+
 
 1:@ Backlink fertig gesetzt.
   @ Fadenende aktualisieren:
@@ -687,7 +519,7 @@ create_ram:
   @ pushdaconst Flag_invisible
   stmdb psp!, {tos}
   movs tos, #Flag_invisible
-  bl komma
+  bl hkomma
 
   @ ( Tokenadresse Neue-Linkadresse )
 
@@ -708,100 +540,6 @@ create_ram:
   @ Fertig :-)
   pop {pc}
 
-
-/*
-;------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "create"
-create: ; Nimmt das nächste Token aus dem Puffer,
-        ; erstellt einen neuen Kopf im Dictionary und verlinkt ihn.
-;------------------------------------------------------------------------------
-  push r10
-
-  call #token  ; Hole den Namen der neuen Definition.
-  ; ( Tokenadresse )
-
-  ; Überprüfe, ob der Token leer ist.
-  ; Das passiert, wenn der Eingabepuffer nach create leer ist.
-
-  mov   @r4, r10
-  mov.b @r10, r10
-  tst r10
-  jne +
-
-    ; Token ist leer. Brauche Stacks nicht zu putzen.
-    writeln " Create needs name !"
-    jmp quit
-
-+ ; Tokenname ist okay.
-  ; Prüfe, ob er schon existiert.
-
-  ; ( Tokenadresse )
-  dup
-  ; ( Tokenadresse Tokenadresse )
-  call #wortsuche
-  ; ( Tokenadresse Einsprungadresse Flags )
-  drop ; Benötige die Flags hier nicht. Möchte doch nur schauen, ob es das Wort schon gibt.
-  ; ( Tokenadresse Einsprungadresse )
-  popda r10
-  ; ( Tokenadresse )
-  tst r10 ; Prüfe, ob die Suche erfolgreich gewesen ist.
-  je +
-
-    write "Redefine "
-    dup          ; ( Tokenadresse Tokenadresse )
-    call #schreibestringmitlaenge   ; Den neuen Tokennamen nochmal ausgeben
-    writeln "."
-
-+ ; ( Tokenadresse )
-
-  call #kommagrade ; Damit ein ungerader Dictionarypointer kein Chaos mehr verursacht.
-  push &DictionaryPointer
-
-  pushda #Flag_invisible  ; $FF
-  call #ckomma            ; Im Flash wird NIE $FF geschrieben - und im RAM ist das kein Problem.
-
-  ifdef flashdictionaryeinbinden
-    mov #Flag_visible, &FlashFlags   ; Für Flash
-  endif
-
-  ; Stattdessen ist der String schon im Stack.
-  call #kommastring
-
-  ifdef flashdictionaryeinbinden ; Hier wird entschieden, ob Links oder Backlinks geschrieben werden.
-
-  cmp #nBacklinkgrenze, &DictionaryPointer
-  jhs +
-    ; Für RAM - Links
-    pushda &FadenEnde
-    call #komma
-    jmp ++
-
-+   ; Für Flash - Backlinks
-
-  ; Hier wird nun der Backlink gesetzt/vorbereitet.
-  call #zwei_allot ; 2 Bytes Platz für den Backlink einplanen.
-
-  ; Backlink im letzten Wort in die Lücke setzen:
-  ; Dies ist eine Berechnung der Adresse des Backlinkfeldes des letzten Wortes.
-    call #Fadenende_Einsprungadresse   ; Aus dem letzten Fadenende bestimme ich durch Überlesen des Namens und der Links die Einsprungadresse
-    popda r10                ; die hole ich mir wieder
-    decd r10                 ; und weiß, dass 2 Bytes davor der Backlink liegt.
-    cmp #0FFFFh, @r10        ; Ist der Backlink ungesetzt ?
-    jne +                    ; Wenn ja,
-      pushdadouble @sp, r10    ; so wird das aktuelle Fadenende, das eben erschaffen wurde dort eingesetzt.
-      call #flashstore         ; ehemals mov @sp, @r10
-+
-
-  else ; Falls nur ins Ram kompiliert wird
-    pushda &FadenEnde
-    call #komma
-  endif
-
-  pop &FadenEnde ; Der vorhin gesicherte Dictionarypointer ist das neue Fadenende.
-
-  pop r10
-  ret
-*/
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "Dictionarystart"
@@ -830,14 +568,14 @@ dictionarystart: @ ( -- Startadresse des aktuellen Dictionaryfadens )
 @ -----------------------------------------------------------------------------
 skipstring: @ Überspringt einen String, dessen Adresse in r0 liegt.
 @ -----------------------------------------------------------------------------
-  push {r3, r4}
+  push {r1, r2}
     @ String überlesen und Pointer gerade machen
-    ldrb r3, [r0] @ Länge des Strings holen
-    adds r3, #1    @ Plus 1 Byte für die Länge
-    ands r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
-    adds r3, r4
-    adds r0, r3  
-  pop {r3, r4}
+    ldrb r1, [r0] @ Länge des Strings holen
+    adds r1, #1    @ Plus 1 Byte für die Länge
+    ands r2, r1, #1 @ Wenn es ungerade ist, noch einen mehr:
+    adds r1, r2
+    adds r0, r1  
+  pop {r1, r2}
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -875,15 +613,16 @@ find: @ ( str -- Code-Adresse Flags )
 
         @ Adresse in r0 zeigt auf:
         @   --> Flagfeld
-        ldr r1, [r0]  @ Aktuelle Flags lesen
-        adds r0, #4
+        ldrh r1, [r0]  @ Aktuelle Flags lesen
+        adds r0, #2
 
-        @   --> Link
-        ldr r2, [r0]  @ Aktuellen Link lesen
-        adds r0, #4
+        movw r2, #0xFFFF
+        cmp r1, r2       @ Flag_invisible ? Überspringen !
+          @   --> Link
+          ldr r2, [r0]  @ Aktuellen Link lesen, verändert Flags nicht !
+        beq 2f        
 
-        cmp r1, #-1   @ Flag_invisible ? Überspringen !
-        beq 2f
+        adds r0, #4 @ Link überspringen
 
           @ --> Name
           pushda r0

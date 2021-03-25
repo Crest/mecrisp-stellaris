@@ -17,6 +17,7 @@
 @
 
 @ Speicherzugriffe aller Art
+@ Wie beim MSP430 gewohnt nun auch interruptsicher :-)
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "move"
@@ -32,11 +33,11 @@ move:  @ ( Quelladdr Zieladdr Byteanzahl -- )
   popda r0 @ Quelladresse
 
   cmp r2, #0      @ Prüfe, ob die Anzahl der zu kopierenden Bytes Null ist.
-  beq move_fertig @ Wenn ja, bin ich fertig.
+  beq.n move_fertig @ Wenn ja, bin ich fertig.
 
 
   cmp r1, r0      @ Quelle und Ziel vergleichen
-  beq move_fertig @ Sind sie gleich, bin ich fertig.
+  beq.n move_fertig @ Sind sie gleich, bin ich fertig.
 
 /*
   blo move_vorwaerts @ Mindestens ein Byte ist noch zu kopieren. 
@@ -101,14 +102,30 @@ move_fertig:
   mov tos, x
   bx lr
 
+
+@ -----------------------------------------------------------------------------
+@  Wortbirne Flag_visible, "+!" @ ( x 32-addr -- )
+@                               @ Adds 'x' to the memory cell at 'addr'.
+@ -----------------------------------------------------------------------------
+@  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+@  ldr y, [tos]       @ Load the current cell value
+@  adds y, w            @ Do the add
+@  str y, [tos]       @ Store it back
+@  mov tos, x
+@  bx lr
+
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "+!" @ ( x 32-addr -- )
                                @ Adds 'x' to the memory cell at 'addr'.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
-  ldr y, [tos]       @ Load the current cell value
-  adds y, w            @ Do the add
-  str y, [tos]       @ Store it back
+
+1:  ldrex y, [tos]       @ Load the current cell value
+    adds y, w            @ Do the add
+    strex r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
   mov tos, x
   bx lr
 
@@ -129,13 +146,28 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
+@  Wortbirne Flag_visible, "h+!" @ ( x 16-addr -- )
+@                               @ Adds 'x' to the memory cell at 'addr'.
+@ -----------------------------------------------------------------------------
+@  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+@  ldrh y, [tos]       @ Load the current cell value
+@  adds y, w            @ Do the add
+@  strh y, [tos]       @ Store it back
+@  mov tos, x
+@  bx lr
+
+@ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "h+!" @ ( x 16-addr -- )
                                @ Adds 'x' to the memory cell at 'addr'.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
-  ldrh y, [tos]       @ Load the current cell value
-  adds y, w            @ Do the add
-  strh y, [tos]       @ Store it back
+
+1:  ldrexh y, [tos]       @ Load the current cell value
+    adds y, w            @ Do the add
+    strexh r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
   mov tos, x
   bx lr
 
@@ -156,16 +188,32 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "c+!" @ ( x 16-addr -- )
+@  Wortbirne Flag_visible, "c+!" @ ( x 8-addr -- )
+@                               @ Adds 'x' to the memory cell at 'addr'.
+@ -----------------------------------------------------------------------------
+@  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+@  ldrb y, [tos]       @ Load the current cell value
+@  adds y, w            @ Do the add
+@  strb y, [tos]       @ Store it back
+@  mov tos, x
+@  bx lr
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "c+!" @ ( x 8-addr -- )
                                @ Adds 'x' to the memory cell at 'addr'.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
-  ldrb y, [tos]       @ Load the current cell value
-  adds y, w            @ Do the add
-  strb y, [tos]       @ Store it back
+
+1:  ldrexb y, [tos]       @ Load the current cell value
+    adds y, w            @ Do the add
+    strexb r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
   mov tos, x
   bx lr
 
+/*
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "bis!" @ ( x 32-addr -- )
   @ Setzt die Bits in der Speicherstelle
@@ -179,25 +227,72 @@ move_fertig:
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "bic!" @ ( x 32-addr -- )
-  @ Setzt die Bits in der Speicherstelle
+  @ Löscht die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos] @ Alten Inhalt laden
-  bics y, w     @ Hinzuverodern
+  bics y, w     @ Bits löschen
   str y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "xor!" @ ( x 32-addr -- )
-  @ Setzt die Bits in der Speicherstelle
+  @ Wechselt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos] @ Alten Inhalt laden
-  eors y, w     @ Hinzuverodern
+  eors y, w     @ Bits umkehren
   str y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
+*/
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "bis!" @ ( x 32-addr -- )
+  @ Setzt die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrex y, [tos]       @ Load the current cell value
+    orrs y, w            @ Set Bits
+    strex r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
+  mov tos, x
+  bx lr
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "bic!" @ ( x 32-addr -- )
+  @ Löscht die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrex y, [tos]       @ Load the current cell value
+    bics y, w            @ Clear Bits
+    strex r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
+  mov tos, x
+  bx lr
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "xor!" @ ( x 32-addr -- )
+  @ Wechselt die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrex y, [tos]       @ Load the current cell value
+    eors y, w            @ Toggle Bits
+    strex r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
+  mov tos, x
+  bx lr
+
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "bit@" @ ( x 32-addr -- )
@@ -211,6 +306,7 @@ move_fertig:
   movne tos, #-1
   bx lr
 
+/*
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "hbis!" @ ( x 16-addr -- )
   @ Setzt die Bits in der Speicherstelle
@@ -243,6 +339,52 @@ move_fertig:
   strh y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
+*/
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "hbis!" @ ( x 16-addr -- )
+  @ Setzt die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrexh y, [tos]       @ Load the current cell value
+    orrs y, w            @ Set Bits
+    strexh r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
+  mov tos, x
+  bx lr
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "hbic!" @ ( x 16-addr -- )
+  @ Löscht die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrexh y, [tos]       @ Load the current cell value
+    bics y, w            @ Clear Bits
+    strexh r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
+  mov tos, x
+  bx lr
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "hxor!" @ ( x 16-addr -- )
+  @ Wechselt die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrexh y, [tos]       @ Load the current cell value
+    eors y, w            @ Toggle Bits
+    strexh r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
+  mov tos, x
+  bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "hbit@" @ ( x 16-addr -- )
@@ -256,7 +398,7 @@ move_fertig:
   movne tos, #-1
   bx lr
 
-
+/*
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "cbis!" @ ( x 8-addr -- )
   @ Setzt die Bits in der Speicherstelle
@@ -287,6 +429,52 @@ move_fertig:
   ldrb y, [tos] @ Alten Inhalt laden
   eors y, w     @ Hinzuverodern
   strb y, [tos] @ Zurückschreiben
+  mov tos, x
+  bx lr
+*/
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "cbis!" @ ( x 8-addr -- )
+  @ Setzt die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrexb y, [tos]       @ Load the current cell value
+    orrs y, w            @ Set Bits
+    strexb r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
+  mov tos, x
+  bx lr
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "cbic!" @ ( x 8-addr -- )
+  @ Löscht die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrexb y, [tos]       @ Load the current cell value
+    bics y, w            @ Clear Bits
+    strexb r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
+  mov tos, x
+  bx lr
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "cxor!" @ ( x 8-addr -- )
+  @ Wechselt die Bits in der Speicherstelle
+@ -----------------------------------------------------------------------------
+  ldm psp!, {w, x} @ X is the new TOS after the store completes.
+
+1:  ldrexb y, [tos]       @ Load the current cell value
+    eors y, w            @ Toggle Bits
+    strexb r3, y, [tos]   @ Store it back
+    cmp r3, #0
+    bne 1b
+
   mov tos, x
   bx lr
 

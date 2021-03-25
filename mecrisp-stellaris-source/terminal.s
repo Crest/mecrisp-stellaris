@@ -18,203 +18,138 @@
 
 @ Terminalroutinen
 
-/*
-@ -----------------------------------------------------------------------------
-gpio_init: @ ( -- )
-@ -----------------------------------------------------------------------------
-        push    {r3}
-        ldr     r0, .L8
-        ldr r0, [r0] @ Register lesen
-        orr     r1, r0, #32
-        ldr     r0, .L8
-        str r1, [r0] @ Register schreiben
-.L2:
-        ldr     r0, .L8+4
-        ldr r0, [r0] @ Register lesen
-        lsls    r3, r0, #26
-        bpl     .L2
-        ldr     r0, .L8+8
-        ldr r0, [r0] @ Register lesen
-        orr     r1, r0, #14
-        ldr     r0, .L8+8
-        str r1, [r0] @ Register schreiben
-        ldr     r0, .L8+12
-        ldr r0, [r0] @ Register lesen
-        bic     r1, r0, #14
-        ldr     r0, .L8+12
-        str r1, [r0] @ Register schreiben
-        ldr     r0, .L8+16
-        ldr r0, [r0] @ Register lesen
-        bic     r1, r0, #14
-        ldr     r0, .L8+16
-        str r1, [r0] @ Register schreiben
-        ldr     r0, .L8+20
-        ldr r0, [r0] @ Register lesen
-        orr     r1, r0, #14
-        ldr     r0, .L8+20
-        str r1, [r0] @ Register schreiben
-        pop     {r3}
-        bx lr
+.equ RCGCPIO,    0x400FE608
+.equ RCGCUART,   0x400FE618
 
-        @ .align        2
-.L8:
-        .word   0x400FE608 @ 1074783752
-        .word   0x400FEA08 @ 1074784776
-        .word   0x40025400 @ 1073894400
-        .word   0x40025420 @ 1073894432
-        .word   0x4002550C @ 1073894668
-        .word   0x4002551C @ 1073894684
+.equ GPIOA_BASE, 0x40004000
+.equ GPIOAFSEL,  0x40004420
+.equ GPIODEN,    0x4000451C
 
-*/
+.equ UART0_BASE, 0x4000C000
+.equ UARTDR,     0x4000C000
+.equ UARTFR,     0x4000C018
+.equ UARTIBRD,   0x4000C024
+.equ UARTFBRD,   0x4000C028
+.equ UARTLCRH,   0x4000C02C
+.equ UARTCTL,    0x4000C030
+.equ UARTCC,     0x4000CFC8
 
 @ -----------------------------------------------------------------------------
 uart_init: @ ( -- )
 @ -----------------------------------------------------------------------------
-        push    {r4}
-        ldr     r4, .L11
-        mov     r0, r4
-        ldr r0, [r0] @ Register lesen
-        orr     r1, r0, #1
-        mov     r0, r4
-        subs    r4, r4, #16
-        str r1, [r0] @ Register schreiben
-        mov     r0, r4
-        ldr r0, [r0] @ Register lesen
-        orr     r1, r0, #1
-        mov     r0, r4
-        ldr     r4, .L11+4
-        str r1, [r0] @ Register schreiben
-        mov     r0, r4
-        ldr r0, [r0] @ Register lesen
-        orr     r1, r0, #3
-        mov     r0, r4
-        adds    r4, r4, #252
-        str r1, [r0] @ Register schreiben
-        mov     r0, r4
-        ldr r0, [r0] @ Register lesen
-        orr     r1, r0, #3
-        mov     r0, r4
-        ldr     r4, .L11+8
-        str r1, [r0] @ Register schreiben
-        mov     r0, r4
-        movs    r1, #0
-        str r1, [r0] @ Register schreiben
-        movs    r1, #8
-        ldr     r0, .L11+12
-        str r1, [r0] @ Register schreiben
-        movs    r1, #44
-        ldr     r0, .L11+16
-        str r1, [r0] @ Register schreiben
-        movs    r1, #96
-        ldr     r0, .L11+20
-        str r1, [r0] @ Register schreiben
-        movs    r1, #5
-        ldr     r0, .L11+24
-        str r1, [r0] @ Register schreiben
-        movs    r1, #0
-        ldr     r0, .L11+28
-        str r1, [r0] @ Register schreiben
-        mov     r0, r4
-        movw    r1, #769
-        str r1, [r0] @ Register schreiben
-        pop     {r4}
-        bx lr
 
-        @ .align        2
-.L11:
-        .word   0x400FE618 @ 1074783768
-        .word   0x40004420 @ 1073759264
-        .word   0x4000C030 @ 1073791024
-        .word   0x4000C024 @ 1073791012
-        .word   0x4000C028 @ 1073791016
-        .word   0x4000C02C @ 1073791020
-        .word   0x4000CFC8 @ 1073795016
-        .word   0x4000C018 @ 1073791000
+  @ Allgemeine Systemeinstellungen
+
+  movs r1, #1         @ UART0 aktivieren
+  ldr  r0, =RCGCUART
+  str  r1, [r0]
+
+  movs r1, #0x3F      @ Alle GPIO-Ports aktivieren
+  ldr  r0, =RCGCPIO
+  str  r1, [r0]
+
+  movs r1, #3         @ PA0 und PA1 auf UART-Sonderfunktion schalten
+  ldr  r0, =GPIOAFSEL
+  str  r1, [r0]
+
+  @ movs r1, #3       @ PA0 und PA1 als digitale Leitungen aktivieren
+  ldr  r0, =GPIODEN
+  str  r1, [r0]
+
+
+  @ UART-Einstellungen vornehmen
+
+  movs r1, #0         @ UART anhalten
+  ldr  r0, =UARTCTL
+  str  r1, [r0]
+
+  @ Baud rate generation:
+  @ 16000000 / (16 * 115200 ) = 1000000 / 115200 = 8.6805
+  @ 0.6805... * 64 = 43.5   ~ 44
+  @ use 8 and 44
+
+  movs r1, #8
+  ldr  r0, =UARTIBRD
+  str r1, [r0]
+
+  movs r1, #44
+  ldr  r0, =UARTFBRD
+  str r1, [r0]
+
+  movs r1, #0x60|0x10  @ 8N1, FIFOs an !
+  ldr  r0, =UARTLCRH
+  str r1, [r0]
+
+  movs r1, #5        @ PIOSC wählen
+  ldr  r0, =UARTCC
+  str r1, [r0]
+
+  movs    r1, #0
+  ldr     r0, =UARTFR
+  str r1, [r0]
+
+  movw r1, #0x301     @ UART starten
+  ldr  r0, =UARTCTL
+  str  r1, [r0]
+
+  bx lr
+
+
+@ Werte für den UARTFR-Register
+.equ RXFE, 0x10 @ Receive  FIFO empty
+.equ TXFF, 0x20 @ Transmit FIFO full
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "emit"
 emit: @ ( c -- ) Sendet Wert in r0
 @ -----------------------------------------------------------------------------
-        push    {r0, r1, r2}
-1:      @ Warte bis UART frei ist
-        literal r1, 0x4000C018
-        ldr r1, [r1] @ Register lesen
-        lsls    r2, r1, #24
-        bpl     1b
+   push {r0, r1}
 
-        literal r1, 0x4000C000
-        popda r0
-        str r0, [r1] @ Register schreiben
-        pop     {r0, r1, r2}
-        bx lr
+   ldr r0, =UARTFR
+1: ldr r1, [r0]     @ Warte solange der Transmit-FIFO voll ist.
+   ands r1, #TXFF
+   bne 1b
+
+   ldr r0, =UARTDR  @ Abschicken
+   popda r1
+   str r1, [r0]
+
+   pop {r0, r1}
+   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "key"
 key: @ ( -- c ) Empfängt Wert in r0
 @ -----------------------------------------------------------------------------
-        push    {r0, r1}
-1:      @ Ist schon etwas da ?
-        literal r0, 0x4000C018
-        ldr r0, [r0] @ Register lesen
-        lsls    r1, r0, #25
-        bpl     1b
+   push {r0, r1}
 
-        @ Einkommendes Zeichen abholen
-        literal r0, 0x4000C000
-        ldr r0, [r0] @ Register lesen
-        uxtb    r0, r0 @ 8 Bits nehmen, Rest mit Nullen auffüllen.
-        pushda r0
-        pop     {r0, r1}
-        bx lr
+   ldr r0, =UARTFR
+1: ldr r1, [r0]     @ Warte solange der Receive-FIFO leer ist.
+   ands r1, #RXFE
+   bne 1b
 
+   ldr r0, =UARTDR    @ Einkommendes Zeichen abholen
+   stmdb psp!, {tos}  @ Platz auf dem Datenstack schaffen
+
+   ldr tos, [r0]      @ Register lesen
+   uxtb tos, tos      @ 8 Bits davon nehmen, Rest mit Nullen auffüllen.
+  
+   pop {r0, r1}
+   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "?key"
   @ ( -- ? ) Ist eine Taste gedrückt ?
 @ -----------------------------------------------------------------------------
-        @ Ist schon etwas da ?
-        literal r0, 0x4000C018
-        ldr r0, [r0] @ Register lesen
-        lsls    r1, r0, #25
-        bpl     1f
+   ldr r0, =UARTFR
+   ldr r1, [r0]     @ Warte solange der Receive-FIFO leer ist.
+   ands r1, #RXFE
+   bne 1f
+     pushdaconst -1
+     bx lr
 
-  pushda -1
-  bx lr
+1: pushdaconst 0
+   bx lr
 
-1: @ Noch nichts da
-  pushda 0
-  bx lr
 
-/*
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "echo"
-echo: @ ( -- ) Sendet alle einkommenden Zeichen zurück und leuchtet bunt.
-@ -----------------------------------------------------------------------------
-1:      @ Hauptschleife
-        bl      key @ Zeichen holen
-        popda r0
-        mov     r4, r0    @ und noch eine Kopie sichern
-        pushda r0
-        bl      emit
-
-        ands    r1, r4, #1  @ Bit 1 gesetzt ? --> Rot
-        it      ne
-        movne   r1, #2
-        literal r0, 0x40025008
-        str r1, [r0] @ Register schreiben
-
-        ands    r1, r4, #2 @ Bit 2 gesetzt ? --> Blau
-        it      ne
-        movne   r1, #4
-        literal r0, 0x40025010
-        str r1, [r0] @ Register schreiben
-
-        ands    r1, r4, #4 @ Bit 3 gesetzt ? --> Grün
-        literal r0, 0x40025020
-        it      ne
-        movne   r1, #8
-        str r1, [r0] @ Register schreiben
-
-        b       1b @ Hauptschleife
- 
-*/
+  .ltorg @ Hier werden viele spezielle Hardwarestellenkonstanten gebraucht, schreibe sie gleich !

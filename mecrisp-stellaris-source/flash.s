@@ -73,8 +73,7 @@ flashkomma_innen:
 
 2:bx lr
 
-3: writeln "Wrong address or data for writing flash !"
-   b quit
+3:Fehler_Quit "Wrong address or data for writing flash !"
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "hflash!" @ ( x Addr -- )
@@ -86,6 +85,7 @@ h_flashkomma:
 
   @ Prüfe Inhalt. Schreibe nur, wenn es NICHT -1 ist.
   ldr r3, =0xFFFF
+  ands r1, r3  @ High-Halfword der Daten wegmaskieren
   cmp r1, r3
   beq 2b
 
@@ -104,25 +104,25 @@ h_flashkomma_innen:
   @ Ist die Adresse auf 4 gerade ?
   ands r2, r0, #2
   cmp r2, #0
-  beq hflash_gerade
+  beq.n hflash_gerade
 
   @ hflash! ungerade:
   @ Muss an der auf 4 geraden Adresse davor ein Word holen.
   subs r0, #2
-  ldrh r5, [r0]
+  ldrh r2, [r0]
   lsl r1, #16  @ Die Daten hochschieben
-  orr r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
+  orr r1, r2 @ Den Inhalt zu den gewünschten Daten hinzuverodern
   @ Fertig. Habe die Daten für den auf 4 geraden Zugriff fertig.
-  b flashkomma_innen
+  b.n flashkomma_innen
 
   @ hflash! gerade:
 hflash_gerade:
-  adds r4, r0, #2
-  ldrh r5, [r4]
-  lsls r5, #16
-  orrs r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
+  adds r2, r0, #2
+  ldrh r3, [r2]
+  lsls r3, #16
+  orrs r1, r3 @ Den Inhalt zu den gewünschten Daten hinzuverodern
   @ Fertig. Habe die Daten für den auf 4 geraden Zugriff fertig.
-  b flashkomma_innen
+  b.n flashkomma_innen
 
 
  @ -----------------------------------------------------------------------------
@@ -140,7 +140,8 @@ c_flashkomma:
   popda r1 @ Inhalt.
 
   @ Prüfe Inhalt. Schreibe nur, wenn es NICHT -1 ist.
-  cmp r1, #0xFF
+  ands r1, #0xFF @ Alles Unwichtige von den Daten wegmaskieren
+  cmp  r1, #0xFF
   beq 2b
 
   @ Ist an der gewünschten Stelle -1 im Speicher ? Muss noch ersetzt werden durch eine Routine, die prüft, ob nur 1->0 Wechsel auftreten.
@@ -152,25 +153,25 @@ c_flashkomma:
   @ Ist die Adresse auf 2 gerade ?
   ands r2, r0, #1
   cmp r2, #0
-  beq cflash_gerade
+  beq.n cflash_gerade
 
   @ cflash! ungerade:
   @ Muss an der geraden Adresse davor ein Word holen.
   subs r0, #1
-  ldrb r5, [r0]
+  ldrb r2, [r0]
   lsls r1, #8  @ Die Daten hochschieben
-  orrs r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
+  orrs r1, r2 @ Den Inhalt zu den gewünschten Daten hinzuverodern
   @ Fertig. Habe die Daten für den auf 4 geraden Zugriff fertig.
-  b h_flashkomma_innen
+  b.n h_flashkomma_innen
 
   @ cflash! gerade:
 cflash_gerade:
-  adds r4, r0, #1
-  ldrb r5, [r4]
-  lsls r5, #8
-  orrs r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
+  adds r2, r0, #1
+  ldrb r3, [r2]
+  lsls r3, #8
+  orrs r1, r3 @ Den Inhalt zu den gewünschten Daten hinzuverodern
   @ Fertig. Habe die Daten für den auf 4 geraden Zugriff fertig.
-  b h_flashkomma_innen
+  b.n h_flashkomma_innen
 
 
 @ -----------------------------------------------------------------------------
@@ -180,7 +181,6 @@ flashpageerase:
 @ -----------------------------------------------------------------------------
   @ Lösche gleich und ohne viel Federlesen.
   push {r0, r1, r2, r3}
-
   popda r0 @ Adresse zum Löschen holen
 
   @ Ist die gewünschte Stelle im Flash-Dictionary ? Außerhalb des Forth-Kerns ?
@@ -203,9 +203,7 @@ flashpageerase:
   pop {r0, r1, r2, r3}
   bx lr
 
-2:writeln "Wrong address for erasing flash !"
-  b quit
-
+2:Fehler_Quit "Wrong address for erasing flash !"
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "eraseflash" @ ( -- )
@@ -213,6 +211,7 @@ flashpageerase:
 @ -----------------------------------------------------------------------------
         ldr r0, =FlashDictionaryAnfang
 eraseflash_intern:
+@  push {lr} Unnötig, am Ende ist Reset...
         ldr r1, =FlashDictionaryEnde
         movw r2, #0xFFFF
 
@@ -221,14 +220,15 @@ eraseflash_intern:
         beq 2f
           pushda r0
             dup
-            write "Lösche Block bei  "
+            write "Erase block at  "
             bl hexdot
-            writeln " aus dem Flash"
+            writeln " from Flash"
           bl flashpageerase
 2:      adds r0, #2
         cmp r0, r1
         bne 1b
-  writeln "Fertig. Reset !"
+  writeln "Finished. Reset !"
+@  pop {lr}
   b Reset
 
 @ -----------------------------------------------------------------------------
@@ -236,4 +236,4 @@ eraseflash_intern:
   @ Beginnt an der angegebenen Adresse mit dem Löschen des Dictionaries.
 @ -----------------------------------------------------------------------------
         popda r0
-        b eraseflash_intern
+        b.n eraseflash_intern

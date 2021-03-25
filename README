@@ -17,7 +17,7 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the second experimental release of Mecrisp-Stellaris,
+This is the third experimental release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
 It runs out of the box on LM4F120H5QR chips.
@@ -36,6 +36,10 @@ inlining of short words.
 
 Communication is via serial 115200 baud 8N1 over UART0.
 
+Mecrisp-Stellaris itself is sending LF for line ending,
+but recognizes both LF and CR. Invoke Picocom with 
+picocom -b 115200 /dev/ttyACM0 --imap lfcrlf,crcrlf --omap delbs,crlf
+
 Flashing is possible with lm4flash:
 https://github.com/utzig/lm4tools
 
@@ -47,16 +51,12 @@ Differences to stable Mecrisp for MSP430 are:
 
 * Experimental code ! Be brave, but expect monsters around the corner.
 
-* Interrupt handling will come soon...
-
 * Comfortable hardware support as for analog input is on the way.
    You can contribute your favourite hardware handling routines 
    to be included in upcoming releases !
 
 * Mecrisp-Stellaris for now has no double-number support, if you wish for it,
    feel free to ask me to implement it !
-
-* It still includes some German debug messages that will disappear soon...
 
 * Source is for German speaking tounges only, but translations will follow
    later if everything proves to be fine. For design ideas, have a look
@@ -182,8 +182,6 @@ Ram and ports:
         hbit@           ( mask a-addr -- flag ) Test BIts in halfword-location
         bit@            ( mask a-addr -- flag ) Test BIts in word-location
 
-Caution: The following work "fetch-modify-store" and are not interrupt-safe !
-
         cxor!           ( mask c-addr -- ) Toggle bits in byte-location
         hxor!           ( mask a-addr -- ) Toggle bits in halfword-location
         xor!            ( mask a-addr -- ) Toggle bits in word-location
@@ -266,12 +264,12 @@ Pictured numerical output:
         sign            ( n -- ) Add a minus sign to pictured number
                                  output buffer, if n is negative
 
-        #S              ( ud1|d1 -- 0 0 ) Add all remaining digits
-                        from the double length number to output buffer
-        #               ( ud1|d1 -- ud2|d2 ) Add one digit from the
-                        double length number to output buffer
-        #>              ( ud|d -- cstr-addr )
-                        Drops double number and finishes
+        #S              ( u1|n1 -- 0 0 ) Add all remaining digits
+                        from the single length number to output buffer
+        #               ( u1|n1 -- u2|n2 ) Add one digit from the
+                        single length number to output buffer
+        #>              ( u|n -- cstr-addr )
+                        Drops number and finishes
                         pictured numeric output ready for type
         <#              ( -- ) Prepare pictured number output buffer
         u.              ( u -- ) Print unsigned single number

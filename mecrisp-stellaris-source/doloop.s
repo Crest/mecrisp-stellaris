@@ -58,7 +58,7 @@ rlooplimit .req r11
                   loop ;
 
 : stars 0 ?do [char] * emit loop ;
-: star5 0 ?do [char] * emit   i 5 = if leave then loop ;
+: stars5 0 ?do [char] * emit   i 5 = if leave then loop ;
 
 : table   cr 11 1 do 11 1 do i j * . space loop cr loop ;
 : table   cr 11 1 do [ .s ] 11 1 do [ .s ] i j * . space loop [ .s ] cr loop [ .s ] ;
@@ -89,9 +89,9 @@ rlooplimit .req r11
   subs psp, #4 @ Ein Element mehr auf dem Stack
 
 1:@ Lückenschiebeschleife
-  ldr r4, [r3]  @ mov @r10, -2(r10)
+  ldr r2, [r3]  @ mov @r10, -2(r10)
   subs r3, #4 
-  str r4, [r3]
+  str r2, [r3]
   adds r3, #4
 
   adds r3, #4

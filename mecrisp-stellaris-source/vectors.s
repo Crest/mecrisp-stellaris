@@ -21,8 +21,9 @@
 .word nullhandler+1   @ Debug monitor handler
 .word 0               @ Reserved
 .word nullhandler+1   @ The PendSV handler
-
 .word irq_vektor_systick+1   @ The SysTick handler
+
+  /*
 
 .word nullhandler+1   @ GPIO Port A
 .word nullhandler+1   @ GPIO Port B
@@ -164,8 +165,12 @@
 .word nullhandler+1   @ PWM 1 Generator 3
 .word nullhandler+1   @ PWM 1 Fault
 
+  */
+
 @ -----------------------------------------------------------------------------
-nullhandler:   
+nullhandler:
+  push {lr} 
   writeln "Unhandled Interrupt !"
+  pop {lr}
   bx lr
 @ -----------------------------------------------------------------------------

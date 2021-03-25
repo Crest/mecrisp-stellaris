@@ -22,7 +22,7 @@
   Wortbirne Flag_visible, "interpret" @ ( -- )
 interpret:
 @ -----------------------------------------------------------------------------
-  push {lr}
+  push {r4, r5, lr}
 
 1:@ Bleibe solange in der Schleife, wie token noch etwas zurückliefert.
 
@@ -32,19 +32,14 @@ interpret:
   ldr r0, =datenstackanfang   @ Stacks fangen oben an und wachsen nach unten.
   cmp psp, r0                 @ Wenn die Adresse kleiner oder gleich der Anfangsadresse ist, ist alles okay.
   bls 2f
-    writeln "Stack underflow"
-    b quit
+    Fehler_Quit_n "Stack underflow"
 
 2:ldr r0, =datenstackende     @ Solange der Stackzeiger oberhalb des Endes liegt, ist alles okay.
   cmp psp, r0
   bhs 3f
-    writeln "Stack overflow"
-    b quit
+    Fehler_Quit_N "Stack overflow"
 
 3: @ Alles ok.
-
-
-
 
   bl token
   @ Prüfe, ob der String leer ist
@@ -52,7 +47,7 @@ interpret:
   ldrb r1, [r0]   @ Länge des Strings holen
   cmp r1, #0
   bne 2f
-    pop {lr}
+    pop {r4, r5, lr}
     bx lr
 
 2:@ String aus Token angekommen.
@@ -106,8 +101,7 @@ interpret:
     @ Number mochte das Token auch nicht.
     pushda r0
     bl type
-    writeln " not found."
-    b quit
+    Fehler_Quit_n " not found."
 
 4:@ Token im Dictionary gefunden.
   @ ( -- )
@@ -117,17 +111,16 @@ interpret:
   beq 5f
     @ writeln "Ausführen"
     @ Im Ausführzustand.
-    mov r5, #0   @ Konstantenfaltungszeiger löschen
+    movs r5, #0   @ Konstantenfaltungszeiger löschen
     str r5, [r4]
 
     ands r3, r1, #Flag_immediate_compileonly
     cmp r3, #Flag_immediate_compileonly
-    bne .ausfuehren
+    bne.n .ausfuehren
 
       pushda r0
       bl type
-      writeln " is compile-only."
-      b quit
+      Fehler_Quit_n " is compile-only."
 
 .ausfuehren:
     pushda r2    @ Adresse zum Ausführen
@@ -148,7 +141,7 @@ interpret:
     movs r0, #Flag_ramallot
     ands r0, r1 @ Flagfeld auf Faltbarkeit hin prüfen
     cmp r0, #Flag_ramallot
-    beq .interpret_faltoptimierung
+    beq.n .interpret_faltoptimierung
 
     @ Bestimme die Anzahl der zur Faltung bereitliegenden Konstanten:
 
@@ -165,7 +158,7 @@ interpret:
     movs r0, #Flag_foldable
     ands r0, r1 @ Flagfeld auf Faltbarkeit hin prüfen
     cmp r0, #Flag_foldable
-    bne .konstantenschleife
+    bne.n .konstantenschleife
 
       @writeln "Ist faltbar"
       @ Prüfe, ob genug Konstanten da sind:
@@ -178,7 +171,7 @@ interpret:
     @writeln " Elemente."
 
       cmp r3, r0
-      blo .konstantenschleife
+      blo.n .konstantenschleife
 
 .interpret_faltoptimierung:
        @ writeln "Genug Konstanten. Falte !"
@@ -201,7 +194,7 @@ interpret:
     @ writeln "Konstante geschrieben"
    
     cmp r3, #0
-    bne .konstanteninnenschleife
+    bne.n .konstanteninnenschleife
    
     @ Die geschriebenen Konstanten herunterwerfen.
     subs r5, #4   @ TOS wurde beim drauflegen der Konstanten gesichert.
@@ -266,9 +259,9 @@ quit_innenschleife:
   bl query
   bl interpret
   writeln " ok."
-  b quit_innenschleife
+  b.n quit_innenschleife
 
 @------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "start"
+@  Wortbirne Flag_visible, "start"
 @------------------------------------------------------------------------------
-  b Reset_mit_Inhalt @ Alter Inhalt vom Flash-Dictionary bleibt erhalten :-)
+@  b Reset_mit_Inhalt @ Alter Inhalt vom Flash-Dictionary bleibt erhalten :-)

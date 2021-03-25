@@ -23,27 +23,26 @@
   Wortbirne Flag_visible, "hex."
 hexdot: @ ( u -- ) @ Funktioniert unabhängig vom restlichen Zahlensystem.
 @ -----------------------------------------------------------------------------
-        push    {r0, r1, r2, r3, r4, r5, lr}
-        popda r0
-        mov     r5, r0
-        movs    r4, #32
-1:
-        subs    r4, r4, #4
-        lsr     r3, r5, r4
-        and     r1, r3, #15
-        cmp     r1, #9
+        push    {r0, r1, lr}
+        popda r1 @ Zahl holen
+        movs    r0, #32 @ Zahl der Bits, die noch zu bearbeiten sind
+
+1:      subs    r0, #4       @ 4 Bits weniger
+        stmdb psp!, {tos}    @ Platz auf dem Stack schaffen
+
+        lsr     tos, r1, r0   @ Schiebe den Wert passend
+        ands    tos, #15      @ Eine Hex-Ziffer maskieren
+        cmp     tos, #9       @ Ziffer oder Buchstabe ?
         ite     hi
-        addhi   r0, r1, #55
-        addls   r0, r1, #48
-        pushda  r0
+          addhi   tos, #55 @ Passendes Zeichen konstruieren
+          addls   tos, #48
         bl      emit
-        cmp     r4, #0
+        cmp     r0, #0
         bne     1b
 
-        movs    r0, #32 @ Leerzeichen anfügen
-        pushda  r0
-        pop     {r0, r1, r2, r3, r4, r5, lr}
-        b       emit
+        pop     {r0, r1, lr}
+        pushdaconst 32 @ Leerzeichen anfügen
+        b emit
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, ".s"
@@ -57,11 +56,10 @@ dots: @ Malt den Stackinhalt
         ldr r1, =datenstackanfang @ Anfang laden
         subs r1, psp @ und aktuellen Stackpointer abziehen
 
-        mov r0, r1 @ erstmal zur Probe ausgeben:
-        pushda r0
-        bl hexdot
-
-        write "/ 4 = "
+@        mov r0, r1 @ erstmal zur Probe ausgeben:
+@        pushda r0
+@        bl hexdot
+@        write "/ 4 = "
 
         lsrs r1, #2 @ Durch 4 teilen
 
@@ -97,9 +95,9 @@ dots: @ Malt den Stackinhalt
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "dump" @ ( addr -- ) 
-dump: @ Malt den Speicherinhalt beginnend ab der angegebenen Adresse
+  @ Malt den Speicherinhalt beginnend ab der angegebenen Adresse
 @ -----------------------------------------------------------------------------
-  push {r0, r1, r2, lr}
+  push {lr}
   popda r0 @ Adresse holen
   mov r1, #32 @ Zahl der Speicherstellen holen
 
@@ -116,18 +114,18 @@ dump: @ Malt den Speicherinhalt beginnend ab der angegebenen Adresse
   subs r1, #1
   bne 1b
 
-  pop {r0, r1, r2, pc}
+  pop {pc}
+
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "words"
 words: @ Malt den Dictionaryinhalt
 @ -----------------------------------------------------------------------------
-        push {r0, r1, r2, r3, r4, lr}
-        writeln "words"
+  push {lr}
+  writeln "words"
 
   bl dictionarystart
   popda r0
-
 
 1:   @ Ist an der Stelle der Flags und der Namenslänge $FFFF ? Dann ist der Faden abgelaufen.
      @ Prüfe hier die Namenslänge als Kriterium
@@ -143,8 +141,8 @@ words: @ Malt den Dictionaryinhalt
         bl hexdot
 
         @ Flagfeld
-        ldr r1, [r0]
-        adds r0, #4
+        ldrh r1, [r0]
+        adds r0, #2
         write "Flags: "
         pushda r1
         bl hexdot
@@ -158,14 +156,10 @@ words: @ Malt den Dictionaryinhalt
 
         @ Name
         @write "Name: "
-        pushda r0
+        pushda r0 @ Adresse des Namensstrings
         @bl type
 
-        ldrb r3, [r0] @ Länge des Strings holen
-        adds r3, #1    @ Plus 1 Byte für die Länge
-        ands r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
-        adds r3, r4
-        adds r0, r3
+        bl skipstring
 
         @ Einsprungadresse
         write "Code: "
@@ -175,9 +169,8 @@ words: @ Malt den Dictionaryinhalt
         write "Name: "
         bl type
 
-        pushdaconst 10
+        pushdaconst 10 @ writeln " :-)"
         bl emit
-        @writeln " :-)"
 
         @ Link prüfen:
         cmp r2, #-1    @ Ungesetzter Link bedeutet Ende erreicht
@@ -187,5 +180,4 @@ words: @ Malt den Dictionaryinhalt
         mov r0, r2
         b 1b      
 
-2:      pop {r0, r1, r2, r3, r4, pc}
- 
+2:      pop {pc}
