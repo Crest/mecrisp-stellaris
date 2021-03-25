@@ -60,3 +60,8 @@
   - Deep changes in core:
     - New code generator for M0
     - Improved code generator for M3
+
+10.08.2013, Matthias Koch, Mecrisp-Stellaris 0.7.1 experimental:
+
+  - ADC and DAC examples for KL25Z128
+  - Improved code generation for M0

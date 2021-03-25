@@ -64,6 +64,11 @@ irq_vektor_\Name:
 @ All interrupt handlers work the same way and are generated with a macro:
 @------------------------------------------------------------------------------
 interrupt systick
+interrupt adc
+interrupt cmp
+interrupt dac
+interrupt porta
+interrupt portd
 
 @------------------------------------------------------------------------------
 

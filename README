@@ -652,6 +652,14 @@ Flash:
         flash!          ( u|n 4-a-addr -- ) Writes single number to flash, 
                                               4 aligned !
 
-Interrupts are coming soon...
+Interrupts:
+
+        irq-adc         ( -- a-addr ) Memory locations for IRQ-Hooks
+        irq-dac
+        irq-cmp
+        irq-porta
+        irq-portd
+
+  Look into vectors.s and interrupts.s to add more interrupts.
 
 Matthias Koch, Summer 2013

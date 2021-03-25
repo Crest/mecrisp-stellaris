@@ -21,6 +21,94 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "registerliteral," @ ( x Register -- )
 registerliteralkomma:  @ Compile code to put a literal constant into a register.
+                       @ Shortest possible way.
+@ -----------------------------------------------------------------------------
+  push {r0, r1, r2, r3, r4, r5, lr}
+
+  @ TOS: Konstante
+  @ r0:  Helferlein
+  @ r1:  LSLS-Opcode, fertig vorbereitet für den gewünschten Zielregister, aber noch ohne Schubweite.
+  @ r2:  Restschub
+  @ r3:  $FF
+  @ r4:  Aktueller Schub
+  @ r5:  Opcode für movs oder adds
+
+  popda r5 @ Hole die Registermaske  Fetch register mask
+
+  @ Generate opcode for lsls target, target, #... 
+  movs r1, r5
+  lsls r1, #3
+  orrs r1, r5
+
+  @ Generate opcode for movs target, #...
+  lsls r5, #8 @ Den Register um 8 Stellen schieben
+  ldr r0, =0x2000 @ MOVS-Opcode für gewünschten Register
+  orrs r5, r0
+  
+  movs r3, #0xFF  @ Maske für die Bits, die in die Opcodes kommen
+
+  @ How far has constant to be shifted right so that it fits in the 8 lowest bits ?
+  movs r2, #0  @ Restschub anfangs auf Null
+1:movs r0, tos @ lsrs r0, tos, r2  
+  lsrs r0, r2  @ Konstante schieben
+  bics r0, r3  @ Maske anwenden
+  beq 2f       @ Oberer Teil leer ?
+    adds r2, #1  @ Ein Bit weiter schieben.
+    b 1b
+
+  @ Generate MOVS/ADDS opcode for the shifted highest 8 bits of constant.
+2:movs r0, tos @ lsrs r0, tos, r2
+  lsrs r0, r2  @ Konstante passend schieben
+  ands r0, r3  @ 8 Bits für den Opcode maskieren
+  orrs r0, r5  @ Opcode zusammensetzen
+  pushda r0    @ Opcode schreiben
+  bl hkomma
+  ldr r0, =0x1000 @ 0x2r00 (MOVS) or 0x1000 = 0x3r00 (ADDS)
+  orrs r5, r0     @ Switch to ADDS-Opcode für alle künftigen Durchläufe
+
+  @ Remove the bits just processed from the given constant.
+  movs r0, r3  @ lsls r0, r3, r2
+  lsls r0, r2  @ Maske passend schieben
+  bics tos, r0 @ Bearbeitete Bits in der Konstanten wegmaskieren
+  beq 5f @ Wenn die Konstante dabei Null wird, ist die Aufgabe erledigt.
+
+  @ How far have the remaining bits to be shifted so that they fit in the 8 lowest bits ?
+  movs r4, #0  @ Aktueller Schub Null
+3:movs r0, tos @ lsrs r0, tos, r4
+  lsrs r0, r4  @ Konstante schieben
+  bics r0, r3  @ Maske anwenden
+  beq 4f       @ Oberer Teil leer ?
+    adds r4, #1  @ Ein Bit weiter schieben.
+    b 3b
+
+  @ Generate a LSLS opcode to shift the already opcoded Bits towards their destination place.
+  @ This is done in steps as more Bits are added "on the fly".
+4:subs r0, r2, r4 @ Restschub - aktueller Schub muss in LSLS opcodiert werden.
+  @ lsls-Opcode generieren, Schub in r0
+  pushda r1 
+  lsls r0, #6
+  orrs tos, r0
+  bl hkomma
+  
+  movs r2, r4
+  b 2b
+
+  @ Is there some shift left ? Generate a final LSLS opcode if necessary.
+5:cmp r2, #0
+  beq 6f
+    @ lsls-Opcode generieren, Schub in r2
+    pushda r1 
+    lsls r2, #6
+    orrs tos, r2
+    bl hkomma
+
+6:drop @ Konstante vergessen  Drop constant
+  pop {r0, r1, r2, r3, r4, r5, pc}
+
+
+@ -----------------------------------------------------------------------------
+registerliteralkommalang:  @ Compile code to put a literal constant into a register.
+                           @ Always on maximum length, needed for dodoes
 @ -----------------------------------------------------------------------------
   push {r0, r1, r2, r3, r4, lr}
 
@@ -137,39 +225,6 @@ registerliteralkomma:  @ Compile code to put a literal constant into a register.
 @ 2000041E : 00000710  18>  10
 @ 20000420 : 0000BD00  > pop {pc}
 
-
-@ -----------------------------------------------------------------------------
-callkommalang: @ ( Zieladresse -- ) Schreibt einen LANGEN Call-Befehl für does>
-               @ Es ist wichtig, dass er immer die gleiche Länge hat.
-               @ Writes a long call instruction with known fixed length. 
-               @ This is needed for does> as you cannot predict the call target address and 
-               @ the shortest instruction length possible needed for it.
-@ -----------------------------------------------------------------------------
-  @ Dies ist ein bisschen schwierig und muss nochmal gründlich optimiert werden.
-  @ Schreibe einen ganz langen Sprung ins Dictionary !
-  @ Wichtig für <builds does> wo die Lückengröße vorher festliegen muss.
-
-
-@ -----------------------------------------------------------------------------
-callkommakurz: @ ( Zieladresse -- )
-               @ Schreibt einen Call-Befehl je nach Bedarf.
-               @ Wird benötigt, wenn die Distanz für einen BL-Opcode zu groß ist.
-               @ Writes a movw-call or a movw-movt-call if destination address is too far away.
-@ ----------------------------------------------------------------------------
-  @ Dies ist ein bisschen schwierig und muss nochmal gründlich optimiert werden.
-  @ Gedanke: Für kurze Call-Distanzen die BL-Opcodes benutzen.
-
-  push {r0, r1, r2, r3, lr}
-  adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
-
-  pushdaconst 0 @ Register r0
-  bl registerliteralkomma
-
-  pushdaconst 0x4780 @ blx r0
-  bl hkomma
-  pop {r0, r1, r2, r3, pc}  
-
-
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "call," @ ( Zieladresse -- )
 callkomma:  @ Versucht einen möglichst kurzen Aufruf einzukompilieren. 
@@ -204,7 +259,12 @@ callkomma:  @ Versucht einen möglichst kurzen Aufruf einzukompilieren.
   cmp r1, r2
   beq 1f      @ Wenn es gleich ist: Negative Distanz ok.
 
-    bl callkommakurz @ Too far away - BL cannot reach that destination. Time for long distance opcodes :-)
+    @ bl callkommakurz @ Too far away - BL cannot reach that destination. Time for long distance opcodes :-)
+        adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
+        pushdaconst 0 @ Register r0
+        bl registerliteralkomma
+        pushdaconst 0x4780 @ blx r0
+        bl hkomma
     pop {r0, r1, r2, r3, pc}
 
 1:
@@ -262,39 +322,25 @@ literalkomma: @ Nur r3 muss erhalten bleiben  Save r3 !
   pushdaconstw 0x603e  @ str tos, [psp, #0]
   bl hkomma
 
-  @ Neuigkeit: Generiere movs-Opcode für sehr kleine Konstanten :-)
-  @ Generate movs Opcode for small constants !
-  cmp tos, #0xFF
-  bhi 1f
-    @ Gewünschte Konstante passt in 8 Bits. Does literal fit in 8 bits ?
-    ldr r3, =0x2600
-    orrs tos, r3
-
-    bl hkomma
-    pop {r3, pc}
-1:
-
   @ Ist die gewünschte Konstante eine kleine negative Zahl ?
   @ Is desired constant a small negative number ?
-  ldr r3, =0xFFFFFF00
+  ldr r3, =0xFFFF0000
   movs r0, tos
   ands r0, r3
   cmp r0, r3
   bne 2f
 
     mvns tos, tos
-    movs r3, 0xFF
-    ands tos, r3
-    ldr r3, =0x2600
-    orrs tos, r3
-    bl hkomma
+
+    pushdaconst 6 @ Target register r6=tos
+    bl registerliteralkomma
 
     pushdaconstw 0x43F6 @ Opcode: mvns tos, tos
     bl hkomma
     pop {r3, pc}
-2:
 
-  pushdaconst 6 @ Gleich in r6=tos legen
+2:
+  pushdaconst 6 @ Target register r6=tos
   bl registerliteralkomma
 
   pop {r3, pc}
@@ -391,7 +437,13 @@ dodoes:
 
   @ Change the Dictionarypointer to insert the long call with the normal comma mechanism.
       str r1, [r2] @ Dictionarypointer umbiegen
-  bl callkommalang @ Aufruf einfügen
+      @  bl callkommalang @ Aufruf einfügen
+               adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
+               pushdaconst 0 @ Register r0
+               bl registerliteralkommalang
+               pushdaconst 0x4780 @ blx r0
+               bl hkomma
+
       str r3, [r2] @ Dictionarypointer wieder zurücksetzen.
 
   bl smudge
