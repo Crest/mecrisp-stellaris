@@ -116,28 +116,28 @@ movwkomma: @ Register r0: Konstante
   stmdb psp!, {tos}    @ Platz auf dem Datenstack schaffen 
   ldr tos, =0xf2400000 @ Opcode movw r0, #0
 
-  ldr r1, =0x0000F000  @ Bit 16 - 13
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsl r2, #4           @ passend schieben
-  orr tos, r2          @ zum Opcode hinzufügen
+  ldr  r1, =0x0000F000  @ Bit 16 - 13
+  ands r2, r0, r1       @ aus der Adresse maskieren
+  lsls r2, #4           @ passend schieben
+  orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr r1, =0x00000800  @ Bit 12
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsl r2, #15          @ passend schieben
-  orr tos, r2          @ zum Opcode hinzufügen
+  ldr  r1, =0x00000800  @ Bit 12
+  ands r2, r0, r1       @ aus der Adresse maskieren
+  lsls r2, #15          @ passend schieben
+  orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr r1, =0x00000700  @ Bit 11 - 9
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsl r2, #4           @ passend schieben
-  orr tos, r2          @ zum Opcode hinzufügen
+  ldr  r1, =0x00000700  @ Bit 11 - 9
+  ands r2, r0, r1       @ aus der Adresse maskieren
+  lsls r2, #4           @ passend schieben
+  orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr r1, =0x000000FF  @ Bit 8 - 1
-  and r2, r0, r1       @ aus der Adresse maskieren
-  @ lsr r2, #0         @ passend schieben
-  orr tos, r2          @ zum Opcode hinzufügen
+  ldr  r1, =0x000000FF  @ Bit 8 - 1
+  ands r2, r0, r1       @ aus der Adresse maskieren
+  @ lsrs r2, #0         @ passend schieben
+  orrs tos, r2          @ zum Opcode hinzufügen
 
   @ Füge den gewünschten Register hinzu:
-  orr tos, r3
+  orrs tos, r3
   
   b.n reversekomma @ movw
 
@@ -148,28 +148,28 @@ movtkomma: @ Register r0: Konstante
   stmdb psp!, {tos}    @ Platz auf dem Datenstack schaffen
   ldr tos, =0xf2c00000 @ Opcode movt r0, #0
 
-  ldr r1, =0xF0000000  @ Bit 32 - 29
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #12          @ passend schieben
-  orr tos, r2          @ zum Opcode hinzufügen
+  ldr  r1, =0xF0000000  @ Bit 32 - 29
+  ands r2, r0, r1       @ aus der Adresse maskieren
+  lsrs r2, #12          @ passend schieben
+  orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr r1, =0x08000000  @ Bit 28
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #1           @ passend schieben
-  orr tos, r2          @ zum Opcode hinzufügen
+  ldr  r1, =0x08000000  @ Bit 28
+  ands r2, r0, r1       @ aus der Adresse maskieren
+  lsrs r2, #1           @ passend schieben
+  orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr r1, =0x07000000  @ Bit 27 - 25
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #12          @ passend schieben
-  orr tos, r2          @ zum Opcode hinzufügen
+  ldr  r1, =0x07000000  @ Bit 27 - 25
+  ands r2, r0, r1       @ aus der Adresse maskieren
+  lsrs r2, #12          @ passend schieben
+  orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr r1, =0x00FF0000  @ Bit 24 - 17
-  and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #16          @ passend schieben
-  orr tos, r2          @ zum Opcode hinzufügen
+  ldr  r1, =0x00FF0000  @ Bit 24 - 17
+  ands r2, r0, r1       @ aus der Adresse maskieren
+  lsrs r2, #16          @ passend schieben
+  orrs tos, r2          @ zum Opcode hinzufügen
 
   @ Füge den gewünschten Register hinzu:
-  orr tos, r3
+  orrs tos, r3
 
   b.n reversekomma @ movt
 
@@ -538,7 +538,7 @@ dodoes:
   Wortbirne Flag_visible, "]" @ In den Compile-Modus übergehen
 @ -----------------------------------------------------------------------------
   ldr r0, =state
-  mov r1, #-1 @ true-Flag in State legen
+  movs r1, #-1 @ true-Flag in State legen
   str r1, [r0] 
   bx lr
 
@@ -546,7 +546,7 @@ dodoes:
   Wortbirne Flag_immediate, "[" @ In den Execute-Modus übergehen
 @ -----------------------------------------------------------------------------
   ldr r0, =state
-  mov r1, #0 @ false-Flag in State legen.
+  movs r1, #0 @ false-Flag in State legen.
   str r1, [r0]
   bx lr
 
@@ -564,7 +564,7 @@ dodoes:
   bl hkomma
 
   ldr r0, =state
-  mov r1, #-1
+  movs r1, #-1
   str r1, [r0]
 
   pop {pc}
@@ -587,7 +587,7 @@ dodoes:
   bl smudge
 
   ldr r0, =state
-  mov r1, #0 @ false-Flag in State legen.
+  movs r1, #0 @ false-Flag in State legen.
   str r1, [r0]
 
   pop {pc}

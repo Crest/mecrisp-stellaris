@@ -57,10 +57,10 @@
 .word 0  @ 28: Reserved
 .word 0  @ 29: Reserved
 
-.word nullhandler+1   @ 30: ADC Sequence 0
-.word nullhandler+1   @ 31: ADC Sequence 1
-.word nullhandler+1   @ 32: ADC Sequence 2
-.word nullhandler+1   @ 33: ADC Sequence 3
+.word irq_vektor_adc0seq0+1   @ 30: ADC Sequence 0
+.word irq_vektor_adc0seq1+1   @ 31: ADC Sequence 1
+.word irq_vektor_adc0seq2+1   @ 32: ADC Sequence 2
+.word irq_vektor_adc0seq3+1   @ 33: ADC Sequence 3
 
 .word nullhandler+1   @ 34: Watchdog timers 0 and 1
 

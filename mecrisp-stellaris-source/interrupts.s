@@ -68,6 +68,10 @@ interrupt portc
 interrupt portd
 interrupt porte
 interrupt portf
+interrupt adc0seq0
+interrupt adc0seq1
+interrupt adc0seq2
+interrupt adc0seq3
 interrupt timer0a
 interrupt timer0b
 interrupt timer1a

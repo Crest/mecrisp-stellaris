@@ -295,9 +295,10 @@ move_fertig:
 
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "bit@" @ ( x 32-addr -- )
+  Wortbirne Flag_visible|Flag_inline, "bit@" @ ( x 32-addr -- )
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
+/*
   ldm psp!, {x} @ Bitmaske holen
   ldr y, [tos]  @ Speicherinhalt holen
   ands x, y      @ Bleibt nach AND etwas über ?
@@ -305,6 +306,16 @@ move_fertig:
   moveq tos, #0
   movne tos, #-1
   bx lr
+*/
+
+
+  ldm psp!, {w}  @ Bitmaske holen
+  ldr tos, [tos] @ Speicherinhalt holen
+  ands tos, w    @ Bleibt nach AND etwas über ?
+  it ne
+  movne tos, #-1 @ Bleibt etwas über, mache ein ordentliches true-Flag daraus.
+  bx lr
+
 
 /*
 @ -----------------------------------------------------------------------------
@@ -387,9 +398,10 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "hbit@" @ ( x 16-addr -- )
+  Wortbirne Flag_visible|Flag_inline, "hbit@" @ ( x 16-addr -- )
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
+/*
   ldm psp!, {x} @ Bitmaske holen
   ldrh y, [tos]  @ Speicherinhalt holen
   ands x, y      @ Bleibt nach AND etwas über ?
@@ -397,6 +409,14 @@ move_fertig:
   moveq tos, #0
   movne tos, #-1
   bx lr
+*/
+
+  ldm psp!, {w}  @ Bitmaske holen
+  ldrh tos, [tos] @ Speicherinhalt holen
+  ands tos, w    @ Bleibt nach AND etwas über ?
+  it ne
+  movne tos, #-1 @ Bleibt etwas über, mache ein ordentliches true-Flag daraus.
+  bx lr
 
 /*
 @ -----------------------------------------------------------------------------
@@ -479,13 +499,22 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "cbit@" @ ( x 8-addr -- )
+  Wortbirne Flag_visible|Flag_inline, "cbit@" @ ( x 8-addr -- )
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
+/*
   ldm psp!, {x} @ Bitmaske holen
   ldrb y, [tos]  @ Speicherinhalt holen
   ands x, y      @ Bleibt nach AND etwas über ?
   ite eq
   moveq tos, #0
   movne tos, #-1
+  bx lr
+*/
+
+  ldm psp!, {w}  @ Bitmaske holen
+  ldrb tos, [tos] @ Speicherinhalt holen
+  ands tos, w    @ Bleibt nach AND etwas über ?
+  it ne
+  movne tos, #-1 @ Bleibt etwas über, mache ein ordentliches true-Flag daraus.
   bx lr

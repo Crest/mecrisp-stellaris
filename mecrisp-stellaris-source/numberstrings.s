@@ -314,6 +314,7 @@ zifferstringanfang: @ Eröffnet einen neuen Ziffernstring.
       @ Gibt eine vorzeichenlose Zahl aus.
       @ Benutzt dafür einfach den Zahlenpuffer.
 @ -----------------------------------------------------------------------------
+udot:
   push {lr}
   @ In Forth: <# #S #>
   bl zifferstringanfang
@@ -325,6 +326,7 @@ zifferstringanfang: @ Eröffnet einen neuen Ziffernstring.
      @ Gibt eine vorzeichenbehaftete Zahl aus.
      @ Benutzt dafür einfach den Zahlenpuffer.
 @ -----------------------------------------------------------------------------
+dot:
   push {lr}
   @ In Forth: dup abs <# #S SIGN #>
   dup @ ( Vorzeichen Zahl )

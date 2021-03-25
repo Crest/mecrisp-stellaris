@@ -33,3 +33,10 @@
   - Tidied up source code
   - Core needs less RAM
   - Lots of small changes
+
+01.07.2013, Matthias Koch, Mecrisp-Stellaris 0.5 experimental:
+
+  - Faster comparisons & bit@
+  - Beautiful output for .s in current base
+  - Analog Interrupts for ADC0 included
+  - Examples in Forth for PLL setup and 1 Msps analog sampling

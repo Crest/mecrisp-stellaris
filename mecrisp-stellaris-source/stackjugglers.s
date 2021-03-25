@@ -41,7 +41,7 @@
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_1, "?dup" @ ( x -- 0 | x x )
+  Wortbirne Flag_foldable_1|Flag_inline, "?dup" @ ( x -- 0 | x x )
 @ -----------------------------------------------------------------------------
   cmp tos, #0
   it ne
@@ -49,7 +49,7 @@
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2, "swap" @ ( x y -- y x )
+  Wortbirne Flag_foldable_2|Flag_inline, "swap" @ ( x y -- y x )
 @ -----------------------------------------------------------------------------
   ldr x, [psp]   @ Load X from the stack, no SP change.
   str tos, [psp] @ Replace it with TOS.
@@ -63,7 +63,7 @@
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2, "over" @ ( x y -- x y x )
+  Wortbirne Flag_foldable_2|Flag_inline, "over" @ ( x y -- x y x )
 @ -----------------------------------------------------------------------------
   ldr x, [psp]        @ Get X into a register.
   stmdb psp!, {tos}   @ Flush cached TOS
@@ -71,7 +71,7 @@
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2, "tuck" @ ( x1 x2 -- x2 x1 x2 )
+  Wortbirne Flag_foldable_2|Flag_inline, "tuck" @ ( x1 x2 -- x2 x1 x2 )
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}     @ x1 in Register holen
   stmdb psp!, {tos} @ x2 nochmal in den Stack

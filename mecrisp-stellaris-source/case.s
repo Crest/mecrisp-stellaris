@@ -140,7 +140,7 @@ spruenge_einpflegen:
   cmp r1, #0
   beq 3f
      @ writeln "Bedingten Sprung einpflegen"
-     bic tos, #1 @ Markierung für den bedingten Sprung entfernen
+     bics tos, #1 @ Markierung für den bedingten Sprung entfernen
      bl v_nullbranch
      b 4f
   

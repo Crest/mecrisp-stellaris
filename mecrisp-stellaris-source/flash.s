@@ -110,8 +110,8 @@ h_flashkomma_innen:
   @ Muss an der auf 4 geraden Adresse davor ein Word holen.
   subs r0, #2
   ldrh r2, [r0]
-  lsl r1, #16  @ Die Daten hochschieben
-  orr r1, r2 @ Den Inhalt zu den gewünschten Daten hinzuverodern
+  lsls r1, #16  @ Die Daten hochschieben
+  orrs r1, r2 @ Den Inhalt zu den gewünschten Daten hinzuverodern
   @ Fertig. Habe die Daten für den auf 4 geraden Zugriff fertig.
   b.n flashkomma_innen
 

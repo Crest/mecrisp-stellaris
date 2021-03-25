@@ -46,28 +46,33 @@ hexdot: @ ( u -- ) @ Funktioniert unabhängig vom restlichen Zahlensystem.
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, ".s"
-dots: @ Malt den Stackinhalt
+dots: @ Malt den Stackinhalt, diesmal verschönert !
 @ -----------------------------------------------------------------------------
         push {r0, r1, r2, r3, lr}
-
-        write "Stack: ["
 
         @ Berechne den Stackfüllstand
         ldr r1, =datenstackanfang @ Anfang laden
         subs r1, psp @ und aktuellen Stackpointer abziehen
 
-@        mov r0, r1 @ erstmal zur Probe ausgeben:
-@        pushda r0
-@        bl hexdot
-@        write "/ 4 = "
-
         lsrs r1, #2 @ Durch 4 teilen
 
-        mov r0, r1 @ erstmal zur Probe ausgeben:
-        pushda r0
-        bl hexdot
+  @ Basis sichern und auf Dezimal schalten
+  ldr r2, =base
+  ldr r0, [r2]
+  push {r0, r1}
 
+  movs r0, #10
+  str r0, [r2]
+
+        write "Stack: ["
+        pushda r1
+        bl dot  @ . bewahrt die Register nicht.
         write "] "
+
+  @ Basis zurückholen
+  pop {r0, r1}
+  ldr r2, =base
+  str r0, [r2]
 
         @ r1 enthält die Zahl der enthaltenen Elemente.
         cmp r1, #0 @ Bei einem leeren Stack ist nichts auszugeben.
@@ -77,8 +82,11 @@ dots: @ Malt den Stackinhalt
 
 1:      @ Hole das Stackelement !
         ldr r0, [r2]
+
+        push {r1, r2}
         pushda r0
-        bl hexdot
+        bl dot @ u. bewahrt die Register nicht.
+        pop {r1, r2}
 
         subs r2, #4
         subs r1, #1
@@ -87,9 +95,9 @@ dots: @ Malt den Stackinhalt
 2:      @ TOS zeigen
         write " TOS: "
         pushda tos
-        bl hexdot
+        bl dot
 
-        writeln " >"
+        writeln " *>"
         pop {r0, r1, r2, r3, pc}
 
 

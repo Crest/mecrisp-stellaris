@@ -240,7 +240,7 @@ Reset: @ Einsprung zu Beginn
    @ Vorbereitungen für die Flash-Pointer
    .include "catchflashpointers.s"
 
-   writeln "Mecrisp-Stellaris by Matthias Koch"
+   writeln "Mecrisp-Stellaris 0.5 by Matthias Koch"
 
    @ Genauso wie in quit. Hier nochmal, damit quit nicht nach dem Init-Einsprung nochmal tätig wird.
    ldr r0, =base
