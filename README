@@ -17,7 +17,7 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the seventh experimental release of Mecrisp-Stellaris,
+This is the seventh release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
 It runs out of the box on:
@@ -25,13 +25,16 @@ It runs out of the box on:
   - STM F4 Discovery             with STM32F407VGT6 
   - Freescale Freedom FRDM-KL25Z with KL25Z128VLK4
 
+Contributions:
+  - Chinese QF-LM4F232           with LM4F232H5QC
+
 http://mecrisp.sourceforge.net/
 
 m-atthias@users.sf.net
 ;------------------------------------------------------------------------------
 
 Mecrisp finally got a younger sister and mastered the jump
-to the ARM Cortex M Thumb-2 instruction set.
+to the ARM Cortex M instruction set.
 
 They share most of the design ideas, so Mecrisp-Stellaris can compile 
 directly into Flash, generates native code with constant folding and
@@ -41,6 +44,7 @@ Communication is via serial 115200 baud 8N1 over
   - UART0  in LM4F120  (connected to USB-serial bridge on Stellaris Launchpad)
   - USART2 in STM32F4  (TX on PA2, RX on PA3)
   - UART0  in KL25Z128 (connected to USB-serial bridge on Freedom board)
+  - UART5  in LM4F232
 
 Hardware and configuration for LM4F120:
   Connect your cable to the Debug-USB-Port, 

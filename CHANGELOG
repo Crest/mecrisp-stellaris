@@ -65,3 +65,12 @@
 
   - ADC and DAC examples for KL25Z128
   - Improved code generation for M0
+
+07.11.2013, Matthias Koch, Mecrisp-Stellaris 0.7.2:
+
+  - A lot of testing later: "experimental" is gone !
+  - Disassembler for M0 included
+  - Two channel 1 Msps sampling example for LM4F120
+  - Contributions:
+      Random number generator for STM32F4 by Sean Stasiak
+      LM4F232H5QC port for Chinese QF-LM4F232 board by 呂明貴 (Albert)
