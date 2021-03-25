@@ -59,9 +59,17 @@ irq_vektor_\Name:
     movt r0, #:upper16:irq_hook_\Name
   .endif
 
-  ldr r0, [r0]
-  adds r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz             Uneven address for Thumb instruction set
-  mov pc, r0  @ Angesprungene Routine kehrt von selbst zurück...   Code returns itself
+  ldr r0, [r0]  @ Cannot ldr to PC directly, as this would require bit 0 to be set accordingly.
+  mov pc, r0    @ No need to make bit[0] uneven as 16-bit Thumb "mov" to PC ignores bit 0.
+  @ Angesprungene Routine kehrt von selbst zurück...   Code returns itself
+
+@ 3.6.1 ARM-Thumb interworking
+@       Thumb interworking uses bit[0] on a write to the PC to determine the CPSR T bit. For 16-bit instructions,
+@       interworking behavior is as follows:
+@       *     ADD (4) and MOV (3) branch within Thumb state ignoring bit[0].
+
+@       For 32-bit instructions, interworking behavior is as follows:
+@       *     LDM and LDR support interworking using the value written to the PC.
 
 .endm
 

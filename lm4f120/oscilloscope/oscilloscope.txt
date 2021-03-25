@@ -236,8 +236,6 @@ $E000E10C constant en3 ( Interrupt Set Enable )
 \  Global initialisation and final tidy up
 \ -----------------------------------------
 
-0 variable RAM-Rewind
-
 : init-capture ( -- )
   80MHz        \ Fast clock necessary for oscilloscope !
   compiletoram  \ Interrupt handler has to be copied into RAM for faster execution.

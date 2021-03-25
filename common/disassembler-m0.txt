@@ -315,10 +315,8 @@ drop \ Forget opcode
 \  Disassembler for definitions
 \ ------------------------------
 
-: see \ Takes name of definition and shows its contents from beginning to first ret
+: seec ( -- ) \ Continues to see
   base @ hex cr
-
-  ' disasm-$ !
 
   begin
     disasm-$ @ h@           $4770 =  \ Flag: Loop terminates with bx lr
@@ -330,31 +328,7 @@ drop \ Forget opcode
   base !
 ;
 
-\ ----------
-\  Examples
-\ ----------
-
-compiletoram
-
-see +
-see dup
-
-: somemore dup 6 = if 4 + else 3 + then ;
-5 somemore .
-6 somemore .
-
-see somemore
-
-: anymore somemore ;
-see anymore
-
-: Hello ." Good" ;
-: world s" morning" type ;
-
-Hello World
-
-see Hello
-see world
-
-see emit
-see key
+: see ( -- ) \ Takes name of definition and shows its contents from beginning to first ret
+  ' disasm-$ !
+  seec
+;

@@ -165,7 +165,7 @@ Restart:
    @ Prepare 16-Bit Flash write emulation value-and-location collection table
    bl sammeltabelleleeren
 
-   writeln "Mecrisp-Stellaris 0.9 with M0 core for KL25Z128 by Matthias Koch"
+   writeln "Mecrisp-Stellaris 1.0 with M0 core for KL25Z128 by Matthias Koch"
 
    @ Genauso wie in quit. Hier nochmal, damit quit nicht nach dem Init-Einsprung nochmal tätig wird.
    @ Exactly like the initialisations in quit. Here again because quit should not be executed after running "init".

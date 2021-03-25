@@ -424,10 +424,8 @@ drop \ Forget opcode
 \  Disassembler for definitions
 \ ------------------------------
 
-: see \ Takes name of definition and shows its contents from beginning to first ret
+: seec ( -- ) \ Continues to see
   base @ hex cr
-
-  ' disasm-$ !
 
   begin
     disasm-$ @ h@           $4770 =  \ Flag: Loop terminates with bx lr
@@ -439,3 +437,7 @@ drop \ Forget opcode
   base !
 ;
 
+: see ( -- ) \ Takes name of definition and shows its contents from beginning to first ret
+  ' disasm-$ !
+  seec
+;

@@ -141,7 +141,7 @@ Reset_Inneneinsprung:
    @ Catch the pointers for Flash dictionary
    .include "../common/catchflashpointers.s"
 
-   writeln "Mecrisp-Stellaris 0.9 for STM32F407 by Matthias Koch"
+   writeln "Mecrisp-Stellaris 1.0 for STM32F407 by Matthias Koch"
 
    @ Genauso wie in quit. Hier nochmal, damit quit nicht nach dem Init-Einsprung nochmal tätig wird.
    @ Exactly like the initialisations in quit. Here again because quit should not be executed after running "init".

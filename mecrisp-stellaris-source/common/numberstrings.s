@@ -524,11 +524,14 @@ fdotn:
   movs tos, #44 @ Add a comma to number buffer ( Sign uL 44 )
   bl zahlanhaengen @ ( Sign uL )
 
+  cmp r4, #0
+  beq 2f
+
 1:bl fziffer   @ Processing of fractional parts ( Sign 0 )
   subs r4, #1
   bne 1b
 
-  pop {r4}
+2:pop {r4}
   drop
   bl vorzeichen
 

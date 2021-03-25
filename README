@@ -17,7 +17,7 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the ninth release of Mecrisp-Stellaris,
+This is the first stable release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
 It runs out of the box on:
@@ -110,7 +110,7 @@ Assembling is done with the GCC-Arm-Embedded toolchain:
 https://launchpad.net/gcc-arm-embedded/
 
 
-Differences to stable Mecrisp for MSP430 are:
+Differences to Mecrisp for MSP430 are:
 
 * Fetch-Modify-Store operations like +! or bic! are not atomic.
 
@@ -120,7 +120,7 @@ Differences to stable Mecrisp for MSP430 are:
 
 * For design ideas, have a look into Mecrisp for MSP430, too !
 
-* Chip specific source has added English comments and hints included
+* Chip specific sources have added English comments and hints included
     for simplify porting to other ARM Cortex-M chips.
 
 ;------------------------------------------------------------------------------

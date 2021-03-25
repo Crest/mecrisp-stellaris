@@ -85,6 +85,5 @@
 nullhandler:
   push {lr} 
   writeln "Unhandled Interrupt !"
-  pop {lr}
-  bx lr
+  pop {pc}
 @ -----------------------------------------------------------------------------
