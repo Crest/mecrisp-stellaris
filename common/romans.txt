@@ -1,31 +1,13 @@
 
-\ Emulate c, which is not available in hardware on this chip.
+\ Roman numerals taken from Leo Brodies "Thinking Forth"
+\ Runs on targets with c, available
 
-0 variable c,collection
-
-: c, ( c -- )
-  c,collection @ ?dup if $FF and swap 8 lshift or h,
-                         0 c,collection !
-                      else $100 or c,collection ! then ;
-
-: align, ( -- )
-  c,collection @ if 0 c, then ;
-
-
-( Roman numerals taken from Leo Brodies "Thinking Forth" )
-
-: create> <builds does> ;
-( In ANS, this would simply be done with "create" )
-
-create> romans
+create romans
   (      ones ) char I c,  char V c,
   (      tens ) char X c,  char L c,
   (  hundreds ) char C c,  char D c,
-  ( thousands ) char M c,  
-  align,
-  align4, \ In this chip 16 bit writes are emulated internally, too, 
-          \ as its Flash controller has 32-bits-at-once write access only.
-          \ Aligning on 4 ensures that this is actually written.
+  ( thousands ) char M c,
+align
 
 0 variable column# ( current_offset )
 : ones      0 column# ! ;
@@ -64,3 +46,4 @@ create> romans
 
 : mealsforwholeday cr 25 6 do i dup roman ." : " mealtime cr 2 +loop cr ;
 mealsforwholeday
+ 
