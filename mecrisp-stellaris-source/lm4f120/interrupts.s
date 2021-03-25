@@ -17,16 +17,17 @@
 @
 
 @ Routinen für die Interrupthandler, die zur Laufzeit neu gesetzt werden können.
+@ Code for interrupt handlers that are exchangeable on the fly
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_inline, "eint" @ ( -- ) Aktiviert Interrupts
+  Wortbirne Flag_inline, "eint" @ ( -- ) Aktiviert Interrupts  Enables Interrupts
 @ ----------------------------------------------------------------------------- 
   cpsie i @ Interrupt-Handler
- @ cpsie f @ Fehler-Handler
+ @ cpsie f @ Fehler-Handler  Error Handler
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_inline, "dint" @ ( -- ) Deaktiviert Interrupts
+  Wortbirne Flag_inline, "dint" @ ( -- ) Deaktiviert Interrupts  Disables Interrupts
 @ ----------------------------------------------------------------------------- 
   cpsid i @ Interrupt-Handler
  @ cpsid f @ Fehler-Handler
@@ -34,7 +35,7 @@
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "nop" @ ( -- ) Handler für unbenutzte Interrupts
-nop_vektor:
+nop_vektor:                     @        Handler for unused Interrupts
 @ ----------------------------------------------------------------------------- 
   bx lr
 
@@ -48,18 +49,19 @@ nop_vektor:
   stmdb psp!, {tos}
   ldr tos, =irq_hook_\Name
   bx lr
-  .word nop_vektor  @ Startwert für unbelegte Interrupts
+  .word nop_vektor  @ Startwert für unbelegte Interrupts   Start value for unused interrupts
 
 irq_vektor_\Name:
   ldr r0, =irq_hook_\Name
   ldr r0, [r0]
-  adds r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz
-  mov pc, r0  @ Angesprungene Routine kehrt von selbst zurück...
+  adds r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz             Uneven address for Thumb instruction set
+  mov pc, r0  @ Angesprungene Routine kehrt von selbst zurück...   Code returns itself
 
 .endm
 
 @------------------------------------------------------------------------------
 @ Alle Interrupthandler funktionieren gleich und werden komfortabel mit einem Makro erzeugt:
+@ All interrupt handlers work the same way and are generated with a macro:
 @------------------------------------------------------------------------------
 interrupt systick
 interrupt porta
@@ -81,22 +83,22 @@ interrupt timer2b
 @------------------------------------------------------------------------------
 
 /*
-  Zu den Registern, die gesichert werden müssen:
-  r 0  Wird von IRQ-Einsprung gesichert
-  r 1  Wird von IRQ-Einsprung gesichert
-  r 2  Wird von IRQ-Einsprung gesichert
-  r 3  Wird von IRQ-Einsprung gesichert
+  Zu den Registern, die gesichert werden müssen:  Register map and interrupt entry push sequence:
+  r 0  Wird von IRQ-Einsprung gesichert  Saved by IRQ entry
+  r 1  Wird von IRQ-Einsprung gesichert  Saved by IRQ entry
+  r 2  Wird von IRQ-Einsprung gesichert  Saved by IRQ entry
+  r 3  Wird von IRQ-Einsprung gesichert  Saved by IRQ entry
 
-  r 4    Schleifenindex und Arbeitsregister, wird vor Benutzung gesichert
-  r 5    Schleifenlimit und Arbeitsregister, wird vor Benutzung gesichert
-  r 6  TOS - müsste eigentlich von sich aus funktionieren
-  r 7  PSP - müsste eigentlich von sich aus funktionieren
+  r 4    Schleifenindex und Arbeitsregister, wird vor Benutzung gesichert  Is saved by code for every usage
+  r 5    Schleifenlimit und Arbeitsregister, wird vor Benutzung gesichert  Is saved by code for every usage
+  r 6  TOS - müsste eigentlich von sich aus funktionieren                  No need to save TOS
+  r 7  PSP - müsste eigentlich von sich aus funktionieren                  No need to save PSP
 
-  r 8  Unbenutzt
-  r 9  Unbenutzt
-  r 10 Unbenutzt
-  r 11 Unbenutzt
-  r 12 Unbenutzt, wird von IRQ-Einsprung gesichert
+  r 8  Unbenutzt  Unused
+  r 9  Unbenutzt  Unused
+  r 10 Unbenutzt  Unused
+  r 11 Unbenutzt  Unused
+  r 12 Unbenutzt, wird von IRQ-Einsprung gesichert  Unused, but saved by IRQ entry
 
   r 13 = sp
   r 14 = lr

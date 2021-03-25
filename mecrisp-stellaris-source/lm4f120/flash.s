@@ -23,6 +23,9 @@
 @ Deshalb laufen all die kleineren Schreibzugriffe über den 32-Bit-Zugriff.
 @ Dies ist aber sehr speziell und muss für andere Chips sicherlich ganz neu geschrieben werden.
 
+@ Write and Erase Flash in LM4F120.
+@ Porting: Rewrite this ! You need hflash! and - as far as possible - cflash!
+
 .equ FLASH_FMA, 0x400FD000
 .equ FLASH_FMD, 0x400FD004
 .equ FLASH_FMC, 0x400FD008

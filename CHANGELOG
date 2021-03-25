@@ -40,3 +40,11 @@
   - Beautiful output for .s in current base
   - Analog Interrupts for ADC0 included
   - Examples in Forth for PLL setup and 1 Msps analog sampling
+
+07.07.2013, Matthias Koch, Mecrisp-Stellaris 0.6 experimental:
+
+  - New target: STM32F407 on STM32F4-Discovery board
+  - Removed experimental atomic memory access from core
+  - Rearranged source code and 
+    added English comments to simplify porting
+  - First examples for STM32F4 included

@@ -23,7 +23,7 @@
 .word   returnstackanfang  @ 00: Stack top address
 .word   Reset+1            @ 01: Reset Vector  +1 wegen des Thumb-Einsprunges
 
-@ ... Interruptvektortabelle noch ziemlich leer ...
+@ Gemeinsame Interruptvektortabelle: Common interrupt vector table:
 
 .word nullhandler+1   @ 02: The NMI handler
 .word nullhandler+1   @ 03: The hard fault handler
@@ -40,48 +40,33 @@
 .word nullhandler+1   @ 14: The PendSV handler
 .word irq_vektor_systick+1   @ 15: The SysTick handler
 
+@ Bis hierhin ist die Interruptvektortabelle bei allen ARM Cortex Chips gleich.
+@ Danach geht es mit den Besonderheiten eines jeden Chips los.
 
-.word irq_vektor_porta+1   @ 16: GPIO Port A
-.word irq_vektor_portb+1   @ 17: GPIO Port B
-.word irq_vektor_portc+1   @ 18: GPIO Port C
-.word irq_vektor_portd+1   @ 19: GPIO Port D
-.word irq_vektor_porte+1   @ 20: GPIO Port E
-.word nullhandler+1   @ 21: UART0 Rx and Tx
-.word nullhandler+1   @ 22: UART1 Rx and Tx
-.word nullhandler+1   @ 23: SSI0 Rx and Tx
-.word nullhandler+1   @ 24: I2C0 Master and Slave
+@ ... Das geht noch viel weiter !
+@ Familienhandbuch Seite 250
 
-.word 0  @ 25: Reserved
-.word 0  @ 26: Reserved
-.word 0  @ 27: Reserved
-.word 0  @ 28: Reserved
-.word 0  @ 29: Reserved
+@ Special interrupt handlers for this particular chip:
 
-.word irq_vektor_adc0seq0+1   @ 30: ADC Sequence 0
-.word irq_vektor_adc0seq1+1   @ 31: ADC Sequence 1
-.word irq_vektor_adc0seq2+1   @ 32: ADC Sequence 2
-.word irq_vektor_adc0seq3+1   @ 33: ADC Sequence 3
-
-.word nullhandler+1   @ 34: Watchdog timers 0 and 1
-
-.word irq_vektor_timer0a+1   @ 35: Timer 0 subtimer A
-.word irq_vektor_timer0b+1   @ 36: Timer 0 subtimer B
-.word irq_vektor_timer1a+1   @ 37: Timer 1 subtimer A
-.word irq_vektor_timer1b+1   @ 38: Timer 1 subtimer B
-.word irq_vektor_timer2a+1   @ 39: Timer 2 subtimer A
-.word irq_vektor_timer2b+1   @ 40: Timer 2 subtimer B
-
-.word nullhandler+1   @ 41: Analog Comparator 0
-.word nullhandler+1   @ 42: Analog Comparator 1
-
-.word 0  @ 43: Reserved
-
-.word nullhandler+1   @ 44: System Control (PLL, OSC, BO)
-.word nullhandler+1   @ 45: FLASH Control
-
-.word irq_vektor_portf+1   @ 46: GPIO Port F
-
-@ ... Das geht noch viel weiter ! Erstmal jedoch eine Grundausstattung an Bord. Siehe Datenblatt Seite 102.
+.word nullhandler+1 @ Position  0: Window Watchdog
+.word nullhandler+1 @ Position  1: PVD through EXTI line detection
+.word nullhandler+1 @ Position  2: Tamper and TimeStamp through EXTI line
+.word nullhandler+1 @ Position  3: RTC Wakeup
+.word nullhandler+1 @ Position  4: Flash
+.word nullhandler+1 @ Position  5: RCC
+.word irq_vektor_exti0+1 @ Position  6: EXTI Line 0
+.word irq_vektor_exti1+1 @ Position  7: EXTI Line 1
+.word irq_vektor_exti2+1 @ Position  8: EXTI Line 2
+.word irq_vektor_exti3+1 @ Position  9: EXTI Line 3
+.word irq_vektor_exti4+1 @ Position 10: EXTI Line 4
+.word nullhandler+1 @ Position 11: DMA1 Stream 0
+.word nullhandler+1 @ Position 12: DMA1 Stream 1
+.word nullhandler+1 @ Position 13: DMA1 Stream 2
+.word nullhandler+1 @ Position 14: DMA1 Stream 3
+.word nullhandler+1 @ Position 15: DMA1 Stream 4
+.word nullhandler+1 @ Position 16: DMA1 Stream 5
+.word nullhandler+1 @ Position 17: DMA1 Stream 6
+.word irq_vektor_adc+1 @ Position 18: ADC global interrupts
 
 
 @ -----------------------------------------------------------------------------

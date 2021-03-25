@@ -17,10 +17,10 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the fourth experimental release of Mecrisp-Stellaris,
+This is the sixth experimental release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
-It runs out of the box on LM4F120H5QR chips.
+It runs out of the box on LM4F120H5QR and STM32F407VGT6 chips.
 
 http://mecrisp.sourceforge.net/
 
@@ -34,21 +34,44 @@ They share most of the design ideas, so Mecrisp-Stellaris can compile
 directly into Flash, generates native code with constant folding and
 inlining of short words. 
 
-Communication is via serial 115200 baud 8N1 over UART0.
+Communication is via serial 115200 baud 8N1 over
+  - UART0  in LM4F120 (connected to USB-serial bridge on Stellaris Launchpad)
+  - USART2 in STM32F4 (TX on PA2, RX on PA3)
 
-Connect your cable to the Debug-USB-Port, 
-set "PWR SELECT" switch to DEBUG and
-close VDD jumper.
+Hardware and configuration for LM4F120:
+  Connect your cable to the Debug-USB-Port, 
+  set "PWR SELECT" switch to DEBUG and
+  close VDD jumper.
+
+  Flashing is possible with lm4flash:
+  https://github.com/utzig/lm4tools
+
+  On startup, this runs with internal PIOSC at 16 MHz, 
+  which is specified +-3% over whole temperature range.
+
+Hardware and configuration for STM32F4:
+  Connect USB cable to ST-Link USB port,
+  connect your favourite serial link to PA2 (TX) and PA3 (RX),
+  keep logic voltage levels in mind !
+  
+  Flashing is possible with st-flash:
+  https://github.com/texane/stlink
+
+  Flash memory is mirrored in hardware starting from address 0. Mecrisp uses
+  the low address range to generate short opcodes for calling core words, but
+  for flashing the binary, you have to use the "true address" $08000000.
+  st-flash write mecrisp-stellaris-stm32f4.bin 0x08000000
+
+  On startup, this runs with external 8 MHz crystal HSE clock,
+  as internal oscillator is specified -8% + 4.5% over whole temp range.
+
 
 Mecrisp-Stellaris itself is sending LF for line ending,
-but recognizes both LF and CR. Invoke Picocom with 
+but recognizes both LF and CR. Invoke Picocom with something like
 picocom -b 115200 /dev/ttyACM0 --imap lfcrlf,crcrlf --omap delbs,crlf
 
-For changing line ending to CR-LF or whatever else you like, 
-look at the beginning of mecrisp-stellaris.s.
-
-Flashing is possible with lm4flash:
-https://github.com/utzig/lm4tools
+For changing line ending to CR-LF or whatever else you like,
+look at the beginning of mecrisp-stellaris-....s.
 
 Assembling is done with the GCC-Arm-Embedded toolchain:
 https://launchpad.net/gcc-arm-embedded/
@@ -57,6 +80,8 @@ https://launchpad.net/gcc-arm-embedded/
 Differences to stable Mecrisp for MSP430 are:
 
 * Experimental code ! Be brave, but expect monsters around the corner.
+
+* Fetch-Modify-Store operations like +! or bic! are not atomic.
 
 * Comfortable hardware support is done in Forth this time.
    You can contribute your favourite hardware handling routines 
@@ -68,6 +93,65 @@ Differences to stable Mecrisp for MSP430 are:
 * Source is for German speaking tounges only, but translations will follow
    later if everything proves to be fine. For design ideas, have a look
    into Mecrisp for MSP430 !
+
+* Chip specific source has added English comments and hints included
+    for simplify porting to other M3/M4 chips.
+
+;------------------------------------------------------------------------------
+; Porting
+;------------------------------------------------------------------------------
+
+Mecrisp-Stellaris can assemble without change for M3 and M4 cores.
+
+M0 cores lack conditional execution "ite eq...", which has to be circumvented 
+by conditional branches. stmdb psp!, {tos} is missing, which I use to push to 
+data stack and they have no division in hardware. 
+
+MSP430 has not, either, it will be perfectly possible, 
+but needs additional work on core to be done first.
+
+Core needs about 10 kb flash at the moment, but reserves 16 kb for upcoming
+additions, and needs 1 kb RAM for stacks and buffers plus variables for 
+interrupt handlers plus RAM dictionary space. Bare minimum for ARM to get it 
+running will be around 16kb/2kb, but to have fun with it and leave space for 
+real applications, go with at least of 32 kb flash and 4 kb RAM. 
+
+Look at the flash specification for your particular chip.
+
+The compiler only depends on 2-aligned 16-Bit flash writes
+one time per location, you can remove c, and align, without issues 
+from the compiler, but 8-Bit flash writes are nice to have 
+for compatibility with standard code. 
+
+Flash erasing is only available for the user, it doesn't need erase cycles 
+while compiling. 
+
+Keep these criteria in mind, pick your favourite chip and add it as your 
+contribution. It won't be too difficult, start with an UART echo written 
+in assembly without libraries, and I will be there for your help.
+
+You have to change memory map, hardware initialisation and interrupt vectors,
+write ?key, key, emit for a first reaction and flash write access
+for final success. There is a common mimimum set of handlers across 
+M3/M4 CPUs, which will help you to get it running for the first time.
+
+Unfortunately, there is a lot of bit twiddling necessary for peripherial 
+modules, as they differ a lot across manufacturers. ARMs seem to only share 
+core components like CPU, interrupt controler and a very basic systick timer.
+
+I don't have the time to support a lot of different chips with examples. 
+
+TI ADCs have a sequencer FIFO buffer, ST ADCs need a DMA channel configured. 
+TI Flash controller offers 32 bit aligned writes only, but as many as you 
+wish per location until all bits are zero; 
+ST-M3 have 16 bit aligned Flash write only, 
+ST-M4 have 8 bit, 16 bit and 32 bit Flash writes available, 
+but only once per location. 
+
+I would like to focus on core development, support porting to other chips and 
+families with adaptions in core, but leave writing initialisation code, 
+testing and writing Forth examples to "family maintainers" which are deep 
+into their chip of choice. 
 
 
 ;------------------------------------------------------------------------------
@@ -180,7 +264,6 @@ Single-Jugglers:
 ; Memory access  (subtle differences to ANS, special cpu-specific extensions)
 ;------------------------------------------------------------------------------
 
-Ram and ports:
         move            ( c-addr1 c-addr2 u -- ) Moves u Bytes in Memory
                         Caution with overlapping areas, as for now it moves
                         in forward direction only.
@@ -216,19 +299,6 @@ Ram and ports:
         c@              ( c-addr -- char ) Fetches byte from memory
         c!              ( char c-addr ) Stores byte in memory
         c+!             ( u|n a-addr -- ) Add to byte memory location
-
-Flash:
-        eraseflash      ( -- ) Erases everything. Clears Ram. Restarts Forth.
-        eraseflashfrom  ( a-addr -- ) Starts erasing at this address.
-                                      Clears Ram. Restarts Forth.
-
-        flashpageerase  ( a-addr -- ) Erase one 1k flash page only. Take care:
-                                      No Reset, no dictionary reinitialisation.
-
-        cflash!         ( char c-addr -- )  Writes byte to flash
-        hflash!         ( u|n a-addr -- )   Writes halfword to flash
-        flash!          ( u|n 4-a-addr -- ) Writes single number to flash, 
-                                              4 aligned !
 
 ;------------------------------------------------------------------------------
 ; Strings and beautiful output (subtle differences to ANS)
@@ -470,14 +540,34 @@ limit index   do ... [one or more leave(s)] ... loop
                         Begins a loop
 
 ;------------------------------------------------------------------------------
-; Hardware access
+; Common Hardware access
 ;------------------------------------------------------------------------------
         dint            ( -- ) Disables Interrupts
         eint            ( -- ) Enables  Interrupts
         nop             ( -- ) No Operation. Hook for unused IRQs !
 
         irq-systick     ( -- a-addr ) Memory locations for IRQ-Hooks
-        irq-porta
+
+;------------------------------------------------------------------------------
+; Specials for LM4F120:
+;------------------------------------------------------------------------------
+
+Flash:
+        eraseflash      ( -- ) Erases everything. Clears Ram. Restarts Forth.
+
+        eraseflashfrom  ( a-addr -- ) Starts erasing at this address.
+                                      Clears Ram. Restarts Forth.
+
+        flashpageerase  ( a-addr -- ) Erase one 1k flash page only. Take care:
+                                      No Reset, no dictionary reinitialisation.
+
+        cflash!         ( char c-addr -- )  Writes byte to flash
+        hflash!         ( u|n a-addr -- )   Writes halfword to flash
+        flash!          ( u|n 4-a-addr -- ) Writes single number to flash, 
+                                              4 aligned !
+Interrupts:
+
+        irq-porta       ( -- a-addr ) Memory locations for IRQ-Hooks
         irq-portb
         irq-portc
         irq-portd
@@ -489,6 +579,32 @@ limit index   do ... [one or more leave(s)] ... loop
         irq-timer1b
         irq-timer2a
         irq-timer2b
+        irq-adc0seq0
+        irq-adc0seq1
+        irq-adc0seq2
+        irq-adc0seq3
+
+  Look into vectors.s and interrupts.s to add more interrupts.
+  
+;------------------------------------------------------------------------------
+; Specials for STM32F4:
+;------------------------------------------------------------------------------
+
+Flash:
+        eraseflash       ( -- ) Erases everything. Clears Ram. Restarts Forth.
+        eraseflashsector ( u -- ) Erases one sector of Flash
+
+        cflash!         ( char c-addr -- )  Writes byte to flash
+        hflash!         ( u|n a-addr -- )   Writes halfword to flash
+
+Interrupts:
+
+        irq-adc         ( -- a-addr ) Memory locations for IRQ-Hooks
+        irq-exti4
+        irq-exti3
+        irq-exti2
+        irq-exti1
+        irq-exti0
 
   Look into vectors.s and interrupts.s to add more interrupts.
 

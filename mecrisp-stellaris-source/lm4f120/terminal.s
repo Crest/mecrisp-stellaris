@@ -17,6 +17,8 @@
 @
 
 @ Terminalroutinen
+@ Terminal code and initialisations.
+@ Porting: Rewrite this !
 
 .equ RCGCPIO,    0x400FE608
 .equ RCGCUART,   0x400FE618
