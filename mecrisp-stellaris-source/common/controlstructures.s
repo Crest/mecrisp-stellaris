@@ -130,7 +130,7 @@ here: @ Gibt den Dictionarypointer zurück
 
 nullprobekomma: @ Write code for comparing TOS to zero.
   push {lr}
-  pushdaconst 0x2e00 @ cmp tos, #0
+  pushdaconstw 0x2e00 @ cmp tos, #0
   bl hkomma
   pushdaconstw 0xcf40 @ drop
   bl hkomma
@@ -143,7 +143,7 @@ r_branch_jne: @ ( Sprungziel -- )  Abschluss besonderer bedingter Rückwärtsspr
   push {lr}   @ ( Target -- )      Finalisation of special conditional backwards jump for loop
   bl branch_v @ ( pushda Dictionaryinter und 2 allot )
   swap
-  pushdaconst 0xD100 @ Opcode für den bedingten Sprung bne  Opcode for conditional jump BNE
+  pushdaconstw 0xD100 @ Opcode für den bedingten Sprung bne  Opcode for conditional jump BNE
   bl cjumpgenerator
   pop {pc}
 
@@ -151,7 +151,7 @@ r_branch_jvc: @ ( Sprungziel -- )  Abschluss besonderer bedingter Rückwärtsspr
   push {lr}   @ ( Target -- )      Finalisation of conditional backwards jump on overflow for +loop
   bl branch_v @ ( pushda Dictionaryinter und 2 allot )
   swap
-  pushdaconst 0xD700 @ Opcode für den bedingten Sprung bvc  Opcode for conditional jump BVC, used for +loop
+  pushdaconstw 0xD700 @ Opcode für den bedingten Sprung bvc  Opcode for conditional jump BVC, used for +loop
   bl cjumpgenerator
   pop {pc}
 
@@ -160,7 +160,7 @@ r_nullbranch: @ ( Sprungziel -- )  Abschluss bedingter Rückwärtssprung
   bl nullprobekomma
   bl branch_v @ ( pushda Dictionaryinter und 2 allot )
   swap
-  pushdaconst 0xD000 @ Opcode für den bedingten Sprung beq  Opcode for conditional jump BEQ
+  pushdaconstw 0xD000 @ Opcode für den bedingten Sprung beq  Opcode for conditional jump BEQ
   bl cjumpgenerator
   pop {pc}
 
@@ -197,14 +197,14 @@ v_branch:      @ ( Adresse-für-Sprungbefehl -- ) Abschluss unbedingter Vorwärt
 v_nullbranch:  @ ( Adresse-für-Sprungbefehl -- ) Abschluss bedingter Vorwärtssprung
   push {lr}    @ ( Address-for-Opcode -- )       Finalisation of conditional forward jump
   bl here @ Sprungziel auf den Stack legen  Put target for jump on datastack
-  pushdaconst 0xD000 @ Opcode für den bedingten Sprung beq  Opcode for conditional jump BEQ
+  pushdaconstw 0xD000 @ Opcode für den bedingten Sprung beq  Opcode for conditional jump BEQ
   bl cjumpgenerator
   pop {pc}
 
 v_casebranch:  @ ( Adresse-für-Sprungbefehl -- ) Abschluss besonderer bedingter Vorwärtssprung für case
   push {lr}    @ ( Address-for-Opcode -- )       Finalisation of special conditional forward jump for case
   bl here @ Sprungziel auf den Stack legen  Put target for jump on datastack
-  pushdaconst 0xD100 @ Opcode für den bedingten Sprung bne  Opcode for conditional jump BNE
+  pushdaconstw 0xD100 @ Opcode für den bedingten Sprung bne  Opcode for conditional jump BNE
   bl cjumpgenerator
   pop {pc}
 

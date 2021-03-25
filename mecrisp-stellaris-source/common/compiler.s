@@ -84,38 +84,23 @@ nicht_gefunden:
   cmp tos, #0  @ Not found ?
   beq.n nicht_gefunden
 
-1:
-  .ifdef m0core
-  movs r1, #Flag_immediate
+1:movs r1, #Flag_immediate  @ In case definition is immediate: Compile a call to its address.
   ands r1, r0
-  .else
-  and r1, r0, #Flag_immediate  @ In case definition is immediate: Compile a call to its address.
-  .endif
   cmp r1, #Flag_immediate
   beq 4f
 
-2:
-  .ifdef m0core
-  movs r1, #Flag_inline
+2:movs r1, #Flag_inline    @ In case definition is inline: Compile entry point as literal and a call to inline, afterwards.
   ands r1, r0
-  .else
-  and r1, r0, #Flag_inline     @ In case definition is inline: Compile entry point as literal and a call to inline, afterwards.
-  .endif
   cmp r1, #Flag_inline
   bne 3f                             @ ( Einsprungadresse )
     bl literalkomma                  @ Einsprungadresse als Konstante einkompilieren
     pushdatos
-    @ movw tos, #:lower16:inlinekomma  @ Inline-Einfügung
-    @ movt tos, #:upper16:inlinekomma   @ Nicht nötig, da die Adresse in den untersten 64 kb liegt    Not needed as core is in lowest 64kb.
     ldr tos, =inlinekomma
-
     b 4f                             @ zum Aufruf bereitlegen
     
 3:@ Normal                     @ In case definition is normal: Compile entry point as literal and a call to call, afterwards.
     bl literalkomma
     pushdatos
-    @ movw tos, #:lower16:callkomma
-    @ movt tos, #:upper16:callkomma    @ Nicht nötig, da die Adresse in den untersten 64 kb liegt    Not needed as core is in lowest 64kb.
     ldr tos, =callkomma
 4:  bl callkomma
     pop {pc}
@@ -140,8 +125,8 @@ inlinekomma:
   ldr r2, =0xbd00 @ pop {pc}
   ldr r3, =0x4770 @ bx lr
   .else
-  movs r1, #0xb500 @ push {lr}
-  movs r2, #0xbd00 @ pop {pc}
+  movw r1, #0xb500 @ push {lr}
+  movw r2, #0xbd00 @ pop {pc}
   movw r3, #0x4770 @ bx lr
   .endif
 
@@ -174,7 +159,7 @@ suchedefinitionsende: @ Rückt den Pointer in r0 ans Ende einer Definition vor.
          ldr r2, =0xbd00 @ pop {pc}
          ldr r3, =0x4770 @ bx lr
          .else
-         movs r2, #0xbd00 @ pop {pc}
+         movw r2, #0xbd00 @ pop {pc}
          movw r3, #0x4770 @ bx lr
          .endif
 
@@ -196,7 +181,7 @@ suchedefinitionsende: @ Rückt den Pointer in r0 ans Ende einer Definition vor.
 retkomma: @ Write pop [pc} opcode
 @ -----------------------------------------------------------------------------
   @ Mache das mit pop {pc}
-  pushdaconst 0xbd00 @ Opcode für pop {pc} schreiben
+  pushdaconstw 0xbd00 @ Opcode für pop {pc} schreiben
   b.n hkomma
 
 @------------------------------------------------------------------------------
@@ -253,13 +238,9 @@ fadenende_einsprungadresse: @ Kleines Helferlein spart Platz
 1:
   .endif
 
-        adds r1, #1    @ Plus 1 Byte für die Länge                One more for length byte
-        .ifdef m0core
-          movs r2, #1
-          ands r2, r1
-        .else
-        ands r2, r1, #1 @ Wenn es ungerade ist, noch einen mehr:  Maybe one more for aligning
-        .endif
+        adds r1, #1  @ Plus 1 Byte für die Länge                One more for length byte
+        movs r2, #1  @ Wenn es ungerade ist, noch einen mehr:  Maybe one more for aligning
+        ands r2, r1
         adds r1, r2
         adds r0, r1
 
@@ -278,13 +259,8 @@ fadenende_einsprungadresse: @ Kleines Helferlein spart Platz
   Wortbirne Flag_visible, "]" @ In den Compile-Modus übergehen  Switch to compile mode
 @ -----------------------------------------------------------------------------
   ldr r0, =state
-
-  .ifdef m0core
-  movs r1, #0
+  movs r1, #0 @ true-Flag in State legen
   mvns r1, r1 @ -1
-  .else
-  movs r1, #-1 @ true-Flag in State legen
-  .endif
   str r1, [r0] 
   bx lr
 
@@ -306,16 +282,12 @@ fadenende_einsprungadresse: @ Kleines Helferlein spart Platz
 
   bl create
 
-  pushdaconst 0xb500 @ Opcode für push {lr} schreiben  Write opcode for push {lr}
+  pushdaconstw 0xb500 @ Opcode für push {lr} schreiben  Write opcode for push {lr}
   bl hkomma
 
   ldr r0, =state
-  .ifdef m0core
-  movs r1, #0
+  movs r1, #0 @ true-Flag in State legen
   mvns r1, r1 @ -1
-  .else
-  movs r1, #-1 @ true-Flag in State legen
-  .endif
   str r1, [r0]
 
   pop {pc}
@@ -332,7 +304,7 @@ fadenende_einsprungadresse: @ Kleines Helferlein spart Platz
     Fehler_Quit " Stack not balanced."
 1: @ Stack balanced, ok
 
-  pushdaconst 0xbd00 @ Opcode für pop {pc} schreiben  Write opcode for pop {pc}
+  pushdaconstw 0xbd00 @ Opcode für pop {pc} schreiben  Write opcode for pop {pc}
   bl hkomma
 
   bl smudge

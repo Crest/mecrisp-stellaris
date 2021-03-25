@@ -22,63 +22,53 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_0|Flag_inline, "true" @ ( -- -1 )
 @ -----------------------------------------------------------------------------
-  .ifdef m0core
   pushdatos
   movs tos, #0
   mvns tos, tos
-  .else
-  pushdaconst -1
-  .endif
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_0|Flag_inline, "false" @ ( x -- 0 )
 @ -----------------------------------------------------------------------------
-  .ifdef m0core
   pushdatos
   movs tos, #0
-  .else
-  pushdaconst 0
-  .endif
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "and" @ ( x1 x2 -- x1&x2 )
+  Wortbirne Flag_inline|Flag_opcodierbar_Rechenlogik, "and" @ ( x1 x2 -- x1&x2 )
                         @ Combines the top two stack elements using bitwise AND.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}
   ands tos, w
   bx lr
+  ands tos, r0 @ Opcode for use with literal in register
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "bic" @ ( x1 x2 -- x1&~x2 )
+  Wortbirne Flag_inline|Flag_opcodierbar_Rechenlogik, "bic" @ ( x1 x2 -- x1&~x2 )
 @ -----------------------------------------------------------------------------
-  .ifdef m0core
   ldm psp!, {w}
   bics w, tos
   movs tos, w
   bx lr
-  .else
-  ldm psp!, {w}
-  bics tos, w, tos
-  bx lr
-  .endif
+  bics tos, r0 @ Opcode for use with literal in register
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "or" @ ( x1 x2 -- x1|x2 )
+  Wortbirne Flag_inline|Flag_opcodierbar_Rechenlogik, "or" @ ( x1 x2 -- x1|x2 )
                        @ Combines the top two stack elements using bitwise OR.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}
   orrs tos, w
   bx lr
+  orrs tos, r0 @ Opcode for use with literal in register
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "xor" @ ( x1 x2 -- x1|x2 )
+  Wortbirne Flag_opcodierbar_Rechenlogik, "xor" @ ( x1 x2 -- x1|x2 )
                         @ Combines the top two stack elements using bitwise exclusive-OR.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}
   eors tos, w
   bx lr
+  eors tos, r0 @ Opcode for use with literal in register
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "not" @ ( x -- ~x )
@@ -132,50 +122,32 @@
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "rshift" @ ( x n -- x' )
+  Wortbirne Flag_inline|Flag_opcodierbar_Schieben, "rshift" @ ( x n -- x' )
                            @ Shifts 'x' right by 'n' bits.
 @ -----------------------------------------------------------------------------
-
-  .ifdef m0core
   ldm psp!, {w}
   lsrs w, tos
   movs tos, w
   bx lr
-  .else
-  ldm psp!, {w}   @ Get x into a register.
-  lsrs tos, w, tos @ Shift by n into TOS.
-  bx lr
-  .endif
+  .hword 0x0836 @ Opcode lsrs r6, r6, #0
+
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "arshift" @ ( x n -- x' )
+  Wortbirne Flag_opcodierbar_Rechenlogik, "arshift" @ ( x n -- x' )
                             @ Shifts 'x' right by 'n' bits, shifting in x's MSB.
 @ -----------------------------------------------------------------------------
-
-  .ifdef m0core
   ldm psp!, {w}
   asrs w, tos
   movs tos, w
   bx lr
-  .else
-  ldm psp!, {w}   @ Get x into a register.
-  asrs tos, w, tos @ Shift by n into TOS.
-  bx lr
-  .endif
-
+  asrs tos, r0 @ Opcode for use with literal in register
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "lshift" @ ( x n -- x' )
+  Wortbirne Flag_inline|Flag_opcodierbar_Schieben, "lshift" @ ( x n -- x' )
                            @ Shifts 'x' left by 'n' bits.
 @ -----------------------------------------------------------------------------
-
-  .ifdef m0core
   ldm psp!, {w}
   lsls w, tos
   movs tos, w
   bx lr
-  .else
-  ldm psp!, {w}   @ Get x into a register.
-  lsls tos, w, tos @ Shift by n into TOS.
-  bx lr
-  .endif
+  .hword 0x0036 @ Opcode lsls r6, r6, #0

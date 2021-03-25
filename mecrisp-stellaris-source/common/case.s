@@ -49,7 +49,7 @@ struktur_qof: @ Will be inlined.
   bx lr
 
 @------------------------------------------------------------------------------
-  Wortbirne Flag_immediate_compileonly, "of"
+  Wortbirne Flag_immediate_compileonly|Flag_opcodierbar_Spezialfall, "of"
   @ ( ... #of 8 -- ... addr #of+1 9 )
 @------------------------------------------------------------------------------
   ldr r0, =struktur_of
@@ -70,6 +70,7 @@ of_inneneinsprung:
   pushda r0
   bl inlinekomma  @ Insert opcodes for structure
 
+of_opcodiereinsprung:
   @ ( #of --> Addr #of+1)
 
   bl branch_v @ here 2 allot
@@ -82,6 +83,53 @@ of_inneneinsprung:
   bl hkomma
 
   pop {pc}
+
+@------------------------------------------------------------------------------
+  @ Opcodable optimisations enter here.
+  push {lr}
+
+  popda r0 @ Fetch constant for folding
+  subs r3, #1 @ One constant less
+  push {r0}
+  bl konstantenschreiben @ Write all other constants in dictionary
+  pop {r0}
+
+  @ Generate opcodes
+
+  cmp tos, #8                  @ Check for structure pattern: Give error message and quit if wrong.
+  .ifdef m0core
+  beq 1f
+  b strukturen_passen_nicht
+1:
+  .else
+  bne strukturen_passen_nicht
+  .endif
+  drop
+
+  @ r0 contains constant for this case comparision.
+
+    @ Is constant small enough to fit in one Byte ?
+    movs r1, #0xFF  @ Mask for 8 Bits
+    ands r1, r0
+    cmp r0, r1
+    bne.n 2f
+    @ Equal ? Constant fits in 8 Bits.
+
+    ldr r1, =0x2E00 @ Opcode cmp r6, #0
+    orrs r0, r1     @ Or together with constant
+    pushda r0
+    bl hkomma
+    b.n of_opcodiereinsprung
+
+2:@ Generate constant for comparision
+  pushda r0
+  pushdaconst 0
+  bl registerliteralkomma
+
+  pushdaconstw 0x42B0 @ cmp r0, tos  
+  bl hkomma
+  b.n of_opcodiereinsprung
+
 
 struktur_of:
   popda r0
@@ -162,15 +210,9 @@ spruenge_einpflegen: @ Internal use only.
 1:cmp r0, #0 @ Sind noch Sprünge zu bearbeiten ? Any jumps left ?
   beq 2f
   
-
-  push {r0, r1}        @ Check if this shall be a conditional jump instead. Needed for ?do which reuses this code.
-  
-  .ifdef m0core
-  movs r1, #1
-  ands r1, tos
-  .else
-  ands r1, tos, #1 @ Prüfe, ob es ein bedingter Sprung werden soll - ?do benötigt solche.#
-  .endif
+  push {r0, r1}
+  movs r1, #1          @ Check if this shall be a conditional jump instead. Needed for ?do which reuses this code. 
+  ands r1, tos         @ Prüfe, ob es ein bedingter Sprung werden soll - ?do benötigt solche.
 
   cmp r1, #0
   beq 3f

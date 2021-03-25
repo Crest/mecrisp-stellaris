@@ -84,29 +84,21 @@ SucheFlashPointer_Hangelschleife:
   .endif
 
   cmp r1, r3   @ Flag_invisible ? Überspringen !  Skip invisible definitions
-  beq Sucheflashpointer_Speicherbelegung_fertig
+  beq.n Sucheflashpointer_Speicherbelegung_fertig
     @ Dies Wort ist sichtbar. Prüfe, ob es Ram-Speicher anfordert und belegt.
     @  write " Sichtbar: Prüfe die Speicherbelegung"
     @ This definition is visible. Check if it allocates RAM.
 
-    .ifdef m0core
     movs r3, #Flag_ramallot
     ands r3, r1
-    .else
-    tst r1, #Flag_ramallot
-    .endif
     
-    beq Sucheflashpointer_Speicherbelegung_fertig @ Benötigt doch kein RAM.
+    beq.n Sucheflashpointer_Speicherbelegung_fertig @ Benötigt doch kein RAM.
       @ writeln "Speicher gewünscht !"
       @ Die Flags werden später nicht mehr gebraucht.
       @ This one allocates RAM, Flags are not needed anymore.
-      
-      .ifdef m0core      
-      movs r3, #0x0F
+
+      movs r3, #0x0F @ Das unterste Nibble maskieren  Mask lower 4 bits that contains amount of 32 bit locations requested.
       ands r1, r3
-      .else
-      ands r1, #0x0F @ Das unterste Nibble maskieren  Mask lower 4 bits that contains amount of 32 bit locations requested.
-      .endif
 
         @ Bei Null Bytes brauche ich nichts zu kopieren, den Fall erkennt move.
         @ Zero byte requests are handled by move itself, no need to catch this special case. Sounds strange, but is useful to have two handles for one variable.
@@ -145,7 +137,7 @@ Sucheflashpointer_Speicherbelegung_fertig:
   cmp r2, #-1 @ Ungesetzter Link bedeutet Ende erreicht  Unset Link means end of dictionary detected.
   .endif
 
-  beq SucheFlashPointer_Fadenende_gefunden
+  beq.n SucheFlashPointer_Fadenende_gefunden
 
   @ writeln " Folge dem Link, er ist gesetzt"
   @ Dem Link folgen  Follow the link, it is set
@@ -156,13 +148,13 @@ Sucheflashpointer_Speicherbelegung_fertig:
   adds r2, #6 @ Flags und Link überlesen  Skip Flags and Link
   ldrb r2, [r2]
   cmp r2, #0xFF @ Ist an der Stelle der Namenslänge $FF ? Dann ist das Fadenende erreicht.  End detected if name length is $FF.
-  beq SucheFlashPointer_Fadenende_gefunden
+  beq.n SucheFlashPointer_Fadenende_gefunden
   
   @ write " Namenslänge nicht $FF, weiterhangeln"  
   @ Okay, der Faden ist noch nicht am Ende. Es könnte allerdings das letzte Wort sein.
   @ Dictionary continues, end not detected yet.
 
-  b SucheFlashPointer_Hangelschleife
+  b.n SucheFlashPointer_Hangelschleife
 
 SucheFlashPointer_Fadenende_gefunden:
   ldr r0, =ZweitFadenende
@@ -194,13 +186,13 @@ SucheFlashPointer_Fadenende_gefunden:
   @ Gehe Rückwärts, bis ich aus dem $FFFF-Freigebiet in Daten komme.
   @ Run backwards through whole Flash memory to find DictionaryPointer.
 1:cmp r0, r1 @  Wenn ich am Anfang angelangt bin, ist das der DictionaryPointer.
-  beq 2f     @  Finished if beginning of Flash is hit.
+  beq.n 2f     @  Finished if beginning of Flash is hit.
 
   subs r0, #2
   ldrh r3, [r0]
   cmp r3, r2 @ 0xFFFF
-  beq 1b @ Wenn es nicht gleich ist, habe ich eine Füllung gefunden.
-         @ If there is not $FFFF on that location I have found "end of free space".
+  beq.n 1b @ Wenn es nicht gleich ist, habe ich eine Füllung gefunden.
+           @ If there is not $FFFF on that location I have found "end of free space".
 
   adds r0, #2
 

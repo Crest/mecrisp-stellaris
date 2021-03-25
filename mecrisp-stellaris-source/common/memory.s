@@ -94,17 +94,18 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_inline, "!" @ ( x 32-addr -- )
+  Wortbirne Flag_inline|Flag_opcodierbar_Speicherschreiben, "!" @ ( x 32-addr -- )
 @ Given a value 'x' and a cell-aligned address 'addr', stores 'x' to memory at 'addr', consuming both.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   str w, [tos]     @ Popping both saves a cycle.
   movs tos, x
   bx lr
-
+  str tos, [r0] @ For opcoding with one constant
+  str r1, [r0]  @ For opcoding with two constants
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "+!" @ ( x 32-addr -- )
+  Wortbirne Flag_inline, "+!" @ ( x 32-addr -- )
                                @ Adds 'x' to the memory cell at 'addr'.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -122,16 +123,18 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_inline, "h!" @ ( x 16-addr -- )
+  Wortbirne Flag_inline|Flag_opcodierbar_Speicherschreiben, "h!" @ ( x 16-addr -- )
 @ Given a value 'x' and an 16-bit-aligned address 'addr', stores 'x' to memory at 'addr', consuming both.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   strh w, [tos]     @ Popping both saves a cycle.
   movs tos, x
   bx lr
+  strh tos, [r0] @ For opcoding with one constant
+  strh r1, [r0]  @ For opcoding with two constants
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "h+!" @ ( x 16-addr -- )
+  Wortbirne Flag_inline, "h+!" @ ( x 16-addr -- )
                                 @ Adds 'x' to the memory cell at 'addr'.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -149,16 +152,18 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_inline, "c!" @ ( x 8-addr -- )
+  Wortbirne Flag_inline|Flag_opcodierbar_Speicherschreiben, "c!" @ ( x 8-addr -- )
 @ Given a value 'x' and an 8-bit-aligned address 'addr', stores 'x' to memory at 'addr', consuming both.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   strb w, [tos]     @ Popping both saves a cycle.
   movs tos, x
   bx lr
+  strb tos, [r0] @ For opcoding with one constant
+  strb r1, [r0]  @ For opcoding with two constants
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "c+!" @ ( x 8-addr -- )
+  Wortbirne Flag_inline, "c+!" @ ( x 8-addr -- )
                                @ Adds 'x' to the memory cell at 'addr'.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -169,7 +174,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "bis!" @ ( x 32-addr -- )  Set bits
+  Wortbirne Flag_inline, "bis!" @ ( x 32-addr -- )  Set bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -180,7 +185,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "bic!" @ ( x 32-addr -- )  Clear bits
+  Wortbirne Flag_inline, "bic!" @ ( x 32-addr -- )  Clear bits
   @ Löscht die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -191,7 +196,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "xor!" @ ( x 32-addr -- )  Toggle bits
+  Wortbirne Flag_inline, "xor!" @ ( x 32-addr -- )  Toggle bits
   @ Wechselt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -202,7 +207,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible|Flag_inline, "bit@" @ ( x 32-addr -- )  Check bits
+  Wortbirne Flag_inline, "bit@" @ ( x 32-addr -- )  Check bits
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}  @ Bitmaske holen
@@ -221,7 +226,7 @@ move_fertig:
   .endif
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "hbis!" @ ( x 16-addr -- )  Set bits
+  Wortbirne Flag_inline, "hbis!" @ ( x 16-addr -- )  Set bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -232,7 +237,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "hbic!" @ ( x 16-addr -- )  Clear bits
+  Wortbirne Flag_inline, "hbic!" @ ( x 16-addr -- )  Clear bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -243,7 +248,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "hxor!" @ ( x 16-addr -- )  Toggle bits
+  Wortbirne Flag_inline, "hxor!" @ ( x 16-addr -- )  Toggle bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -254,7 +259,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible|Flag_inline, "hbit@" @ ( x 16-addr -- )  Check bits
+  Wortbirne Flag_inline, "hbit@" @ ( x 16-addr -- )  Check bits
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}  @ Bitmaske holen
@@ -273,7 +278,7 @@ move_fertig:
   .endif
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "cbis!" @ ( x 8-addr -- )  Set bits
+  Wortbirne Flag_inline, "cbis!" @ ( x 8-addr -- )  Set bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -284,7 +289,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "cbic!" @ ( x 8-addr -- )  Clear bits
+  Wortbirne Flag_inline, "cbic!" @ ( x 8-addr -- )  Clear bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -295,7 +300,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "cxor!" @ ( x 8-addr -- )  Toggle bits
+  Wortbirne Flag_inline, "cxor!" @ ( x 8-addr -- )  Toggle bits
   @ Setzt die Bits in der Speicherstelle
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
@@ -306,7 +311,7 @@ move_fertig:
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible|Flag_inline, "cbit@" @ ( x 8-addr -- )  Check bits
+  Wortbirne Flag_inline, "cbit@" @ ( x 8-addr -- )  Check bits
   @ Prüft, ob Bits in der Speicherstelle gesetzt sind
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}  @ Bitmaske holen

@@ -258,12 +258,8 @@ alignkomma: @ Macht den Dictionarypointer gerade
   ldr r0, =Dictionarypointer
   ldr r1, [r0] @ Hole den Dictionarypointer
 
-  .ifdef m0core
   movs r0, #1
   ands r1, r0
-  .else
-  ands r1, #1
-  .endif
   beq 1f
 
   pushdaconst 0
@@ -646,7 +642,9 @@ create_ram:
   bl komma
 
   @ Flags setzen  Set initial Flags to Invisible.
-  pushdaconst Flag_invisible
+  pushdatos
+  movs tos, #0
+  mvns tos, tos
   bl hkomma
 
   @ Das Fadenende aktualisieren  Set new latest
@@ -699,14 +697,10 @@ skipstring: @ Überspringt einen String, dessen Adresse in r0 liegt.  Skip strin
   push {r1, r2}
     @ String überlesen und Pointer gerade machen
     ldrb r1, [r0] @ Länge des Strings holen      Fetch length
-    adds r1, #1    @ Plus 1 Byte für die Länge   One more for length byte
+    adds r1, #1   @ Plus 1 Byte für die Länge   One more for length byte
 
-    .ifdef m0core
-    movs r2, #1
+    movs r2, #1  @ Wenn es ungerade ist, noch einen mehr:   Maybe one more for aligning.
     ands r2, r1
-    .else
-    ands r2, r1, #1 @ Wenn es ungerade ist, noch einen mehr:   Maybe one more for aligning.
-    .endif
 
     adds r1, r2
     adds r0, r1  

@@ -74,3 +74,8 @@
   - Contributions:
       Random number generator for STM32F4 by Sean Stasiak
       LM4F232H5QC port for Chinese QF-LM4F232 board by 呂明貴 (Albert)
+
+16.11.2013, Matthias Koch, Mecrisp-Stellaris 0.8:
+
+  - Deep changes in core: Opcodings !
+    They generate faster code for all targets.

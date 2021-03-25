@@ -45,18 +45,10 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "?dup" @ ( x -- 0 | x x )
 @ -----------------------------------------------------------------------------
-  .ifdef m0core
   cmp tos, #0
   beq 1f
   pushdatos
 1:bx lr
-
-  .else
-  cmp tos, #0
-  it ne
-  stmdbne psp!, {tos}
-  bx lr
-  .endif
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "swap" @ ( x y -- y x )
@@ -95,7 +87,7 @@
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_3, "rot" @ ( x w y -- w y x )
+  Wortbirne Flag_foldable_3|Flag_inline, "rot" @ ( x w y -- w y x )
 @ -----------------------------------------------------------------------------
 @  ldm psp!, {w, x}    @ Get W and X into registers
 @  stmdb psp!, {w}     @ These two instructions cannot be combined.
@@ -111,7 +103,7 @@
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_3, "-rot" @ ( x w y -- y x w )
+  Wortbirne Flag_foldable_3|Flag_inline, "-rot" @ ( x w y -- y x w )
 @ -----------------------------------------------------------------------------
 @  ldm psp!, {w, x}    @ Get W and X into registers
 @  stmdb psp!, {tos}   @ These two instructions cannot be combined.

@@ -86,6 +86,7 @@ movtkomma: @ Register r0: Konstante                                    Constant
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "movwmovt," @ ( x Register -- )
 movwmovtkomma:  @ Compile code to put a literal constant into a register.
+registerliteralkomma:
 @ -----------------------------------------------------------------------------
   push {r0, r1, r2, r3, lr}
 
@@ -142,7 +143,7 @@ callkommakurz: @ ( Zieladresse -- )
   bl movwmovtkomma
 
 callkommakurz_intern:
-  pushdaconst 0x4780 @ blx r0
+  pushdaconstw 0x4780 @ blx r0
   bl hkomma
   pop {r0, r1, r2, r3, pc}  
 
@@ -350,7 +351,7 @@ dodoes:
   push {lr}
   bl create       @ Neues Wort wird erzeugt
 
-  pushdaconst 0xb500 @ Opcode für push {lr} schreiben  Write opcode for push {lr}
+  pushdaconstw 0xb500 @ Opcode für push {lr} schreiben  Write opcode for push {lr}
   bl hkomma
 
   pushdaconst 10  @ Hier kommt ein Call-Befehl hinein, aber ich weiß die Adresse noch nicht.

@@ -79,7 +79,9 @@ digit_base_r3:  @ Erwartet Base in r3  Base has to be in r3 if you enter here.
   cmp tos, r3 @ r3 enthält von number aus die Basis.
   bhs 5b     @ Außerhalb der Basis werden keine Buchstaben als Zahlen akzeptiert.
 
-  pushdaconst -1 @ True-Flag bereitlegen
+  pushdatos
+  movs tos, #0
+  mvns tos, tos @ True-Flag bereitlegen
   bx lr
 
 @ -----------------------------------------------------------------------------

@@ -41,26 +41,16 @@ psp .req r7
 @ -----------------------------------------------------------------------------
 
 .macro pushdatos @ Push TOS on Datastack - a common, often used factor.
-  .ifdef m0core
   subs psp, #4
   str tos, [psp]
-  .else
-  stmdb psp!, {tos}
-  .endif
 .endm
   
-
 .macro pushdaconst zahl @ Push small constant on Datastack
-  .ifdef m0core
-  pushdatos
-  ldr tos, =\zahl
-  .else
   pushdatos
   movs tos, #\zahl
-  .endif
 .endm
 
-.macro pushdaconstw zahl @ Push bigger constant on Datastack
+.macro pushdaconstw zahl @ Push medium constant on Datastack
   .ifdef m0core
   pushdatos
   ldr tos, =\zahl
@@ -128,6 +118,17 @@ psp .req r7
 .equ Flag_foldable_5, 0x00000045
 .equ Flag_foldable_6, 0x00000046
 .equ Flag_foldable_7, 0x00000047
+
+.equ Flag_opcodable,  0x00000008
+
+@ Of course, some of those cases are not foldable at all. But this way their bitmask is constructed.
+
+.equ Flag_opcodierbar_Plusminus,         Flag_foldable|Flag_opcodable|1
+.equ Flag_opcodierbar_Rechenlogik,       Flag_foldable|Flag_opcodable|2
+.equ Flag_opcodierbar_GleichUngleich,    Flag_foldable|Flag_opcodable|3
+.equ Flag_opcodierbar_Schieben,          Flag_foldable|Flag_opcodable|4
+.equ Flag_opcodierbar_Speicherschreiben, Flag_foldable|Flag_opcodable|5
+.equ Flag_opcodierbar_Spezialfall,       Flag_foldable|Flag_opcodable|0
 
 @ -----------------------------------------------------------------------------
 @ Makros zum Bauen des Dictionary

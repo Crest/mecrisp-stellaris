@@ -20,20 +20,24 @@
 @ Small calculations
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "+" @ ( x1 x2 -- x1+x2 )
+  Wortbirne Flag_inline|Flag_opcodierbar_Plusminus, "+" @ ( x1 x2 -- x1+x2 )
                       @ Adds x1 and x2.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}
   adds tos, w 
   bx lr
+  adds tos, r0 @ Opcode for use with literal in register
+  adds tos, #0 @ Opcode for use with byte literal
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "-" @ ( x1 x2 -- x1-x2 )
+  Wortbirne Flag_inline|Flag_opcodierbar_Plusminus, "-" @ ( x1 x2 -- x1-x2 )
                       @ Subtracts x2 from x1.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}
   subs tos, w, tos
   bx lr
+  subs tos, r0 @ Opcode for use with literal in register
+  subs tos, #0 @ Opcode for use with byte literal
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "1-" @ ( u -- u-1 )
@@ -70,20 +74,12 @@
   bx lr
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_1, "abs" @ ( n1 -- |n1| )
+  Wortbirne Flag_foldable_1|Flag_inline, "abs" @ ( n1 -- |n1| )
 @ -----------------------------------------------------------------------------
-  .ifdef m0core
   cmp tos, #0
   bpl 1f
   rsbs tos, tos, #0
 1:bx lr
-
-  .else
-  cmp tos, #0
-  it mi
-  rsbsmi tos, tos, #0
-  bx lr
-  .endif
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2, "u/mod" @ ( u1 u2 -- rem quot )
@@ -246,17 +242,10 @@ divmod_plus_plus:
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "even" @ ( x -- x' )
 @ -----------------------------------------------------------------------------
-  .ifdef m0core
-  movs r1, #1
-  ands r1, tos
-  adds tos, r1
+  movs r0, #1
+  ands r0, tos
+  adds tos, r0
   bx lr
-
-  .else
-  ands r1, tos, #1
-  adds tos, r1
-  bx lr
-  .endif
 
 /*
 @ -----------------------------------------------------------------------------

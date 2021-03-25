@@ -87,12 +87,8 @@ compare: @ ( str1 str2 -- f ) Vergleicht zwei Strings  Compare two strings
    bne 1b
 
    @ Gleich ! Equal !
-   .ifdef m0core
-     movs tos, #0
-     mvns tos, tos
-   .else
-     movs tos, #-1
-   .endif
+   movs tos, #0
+   mvns tos, tos
    b 3f
 
 2: @ Ungleich ! Unequal !

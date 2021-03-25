@@ -263,7 +263,7 @@ callkomma:  @ Versucht einen möglichst kurzen Aufruf einzukompilieren.
         adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
         pushdaconst 0 @ Register r0
         bl registerliteralkomma
-        pushdaconst 0x4780 @ blx r0
+        pushdaconstw 0x4780 @ blx r0
         bl hkomma
     pop {r0, r1, r2, r3, pc}
 
@@ -441,7 +441,7 @@ dodoes:
                adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
                pushdaconst 0 @ Register r0
                bl registerliteralkommalang
-               pushdaconst 0x4780 @ blx r0
+               pushdaconstw 0x4780 @ blx r0
                bl hkomma
 
       str r3, [r2] @ Dictionarypointer wieder zurücksetzen.
@@ -469,7 +469,7 @@ dodoes:
       bl hkomma
 1:
 
-  pushdaconst 0xb500 @ Opcode für push {lr} schreiben  Write opcode for push {lr}
+  pushdaconstw 0xb500 @ Opcode für push {lr} schreiben  Write opcode for push {lr}
   bl hkomma
 
   pushdaconst 16  @ Hier kommt ein Call-Befehl hinein, aber ich weiß die Adresse noch nicht.
