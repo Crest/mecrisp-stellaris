@@ -209,9 +209,9 @@
                         @ x3 is the lesser of x1 and x2.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}       @ Get x1 into a register.
-  cmp x, tos          @ Compare 'em.
+  cmp w, tos          @ Compare 'em.
   it lt               @ If X is less,
-  movlt tos, x        @  replace TOS with it.
+  movlt tos, w        @  replace TOS with it.
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -219,9 +219,9 @@
                         @ x3 is the greater of x1 and x2.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}       @ Get x1 into a register.
-  cmp x, tos          @ Compare 'em.
+  cmp w, tos          @ Compare 'em.
   it gt               @ If X is greater,
-  movgt tos, x        @  replace TOS with it.
+  movgt tos, w        @  replace TOS with it.
   bx lr
 
 @ -----------------------------------------------------------------------------

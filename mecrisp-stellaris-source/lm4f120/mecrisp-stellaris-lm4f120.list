@@ -302,16 +302,16 @@ Disassembly of section .text:
      3ea:	03d80042 	bicseq	r0, r8, #66	; 0x42
      3ee:	6d030000 	stcvs	0, cr0, [r3, #-0]
      3f2:	cf016e69 	svcgt	0x00016e69
-     3f6:	42b1      	cmp	r1, r6
+     3f6:	42b0      	cmp	r0, r6
      3f8:	bfb8      	it	lt
-     3fa:	460e      	movlt	r6, r1
+     3fa:	4606      	movlt	r6, r0
      3fc:	4770      	bx	lr
      3fe:	03ea0042 	mvneq	r0, #66	; 0x42
      402:	6d030000 	stcvs	0, cr0, [r3, #-0]
      406:	cf017861 	svcgt	0x00017861
-     40a:	42b1      	cmp	r1, r6
+     40a:	42b0      	cmp	r0, r6
      40c:	bfc8      	it	gt
-     40e:	460e      	movgt	r6, r1
+     40e:	4606      	movgt	r6, r0
      410:	4770      	bx	lr
      412:	03fe0042 	mvnseq	r0, #66	; 0x42
      416:	75040000 	strvc	r0, [r4, #-0]

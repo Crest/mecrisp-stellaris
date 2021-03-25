@@ -48,3 +48,8 @@
   - Rearranged source code and 
     added English comments to simplify porting
   - First examples for STM32F4 included
+
+29.07.2013, Matthias Koch, Mecrisp-Stellaris 0.6.1 experimental:
+
+  - Bugfix in min and max
+  - 1 Msps analog sampling example for STM

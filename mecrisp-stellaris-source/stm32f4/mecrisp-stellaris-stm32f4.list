@@ -294,16 +294,16 @@ Disassembly of section .text:
      3ba:	03a80042 			; <UNDEFINED> instruction: 0x03a80042
      3be:	6d030000 	stcvs	0, cr0, [r3, #-0]
      3c2:	cf016e69 	svcgt	0x00016e69
-     3c6:	42b1      	cmp	r1, r6
+     3c6:	42b0      	cmp	r0, r6
      3c8:	bfb8      	it	lt
-     3ca:	460e      	movlt	r6, r1
+     3ca:	4606      	movlt	r6, r0
      3cc:	4770      	bx	lr
      3ce:	03ba0042 			; <UNDEFINED> instruction: 0x03ba0042
      3d2:	6d030000 	stcvs	0, cr0, [r3, #-0]
      3d6:	cf017861 	svcgt	0x00017861
-     3da:	42b1      	cmp	r1, r6
+     3da:	42b0      	cmp	r0, r6
      3dc:	bfc8      	it	gt
-     3de:	460e      	movgt	r6, r1
+     3de:	4606      	movgt	r6, r0
      3e0:	4770      	bx	lr
      3e2:	03ce0042 	biceq	r0, lr, #66	; 0x42
      3e6:	75040000 	strvc	r0, [r4, #-0]

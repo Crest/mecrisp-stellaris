@@ -96,7 +96,7 @@ $E000E10C constant en3 ( Interrupt Set Enable )
 
 0 variable sample# \ Current offset into circular buffer
 
-: process-sample ( Sample Nummer )  shl buffer @ + h! ; \ Sample# * 2 is Offset into Buffer.
+: process-sample ( Sample Nummer )  shl buffer @ + h! inline ; \ Sample# * 2 is Offset into Buffer.
 
 : adc-handler ( -- ) \ For 1 Msps with 8 Samples/Interrupt
   1 ADC0_ISC ! \ Clear Interrupt-Flag
