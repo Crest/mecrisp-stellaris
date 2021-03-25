@@ -227,6 +227,7 @@ Single-Jugglers:
         >r              ( x -- ) (R: -- x )
         r>              ( -- x ) (R: x -- )
         r@              ( -- x ) (R: x -- x )
+        rdrop           (  --  ) (R: x -- )
 
 Double-Jugglers:        They perform the same for double numbers.
 
@@ -242,6 +243,7 @@ Double-Jugglers:        They perform the same for double numbers.
         2>r             ( x1 x2 -- ) (R: -- x1 x2 )
         2r>             ( -- x1 x2 ) (R: x1 x2 -- )
         2r@             ( -- x1 x2 ) (R: x1 x2 -- x1 x2 )
+        2rdrop          ( -- )       (R: x1 x2 -- )
 
 ;------------------------------------------------------------------------------
 ; Logic  (exactly ANS, some logical extensions)
@@ -538,9 +540,11 @@ Deep insights:
         align4,         ( -- ) Aligns on 4. M0 only
 
         movwmovt,       ( x Register -- ) Generate a movw/movt-Sequence to
-                                          get x into given Register. M3/M4 only
-       registerliteral, ( x Register -- ) Generate a movs-lsls-adds... sequence 
-                                          to get x into given Register. M0 only
+                                          get x into any given Register. M3/M4 only
+       registerliteral, ( x Register -- ) Generate shortest possible sequence
+                                          to get x into given low Register.
+                                          On M0: A movs-lsls-adds... sequence
+                                          M3/M4: movs / movs-mvns / movw / movw-movt
 
 ;------------------------------------------------------------------------------
 ; Flags and inventory  (speciality!)
@@ -769,6 +773,9 @@ Interrupts:
         irq-exti2
         irq-exti1
         irq-exti0
+        irq-tim2
+        irq-tim3
+        irq-tim4
 
   Look into vectors.s and interrupts.s to add more interrupts.
 

@@ -196,10 +196,12 @@
                               then
 
   case \ Decode "singular" opcodes used in Mecrisp-Stellaris:
+
     $F04F36FF of ." mov r6 #FFFFFFFF" endof
 
     $F1144400 of ." adds r4 #80000000" endof
     $F1A44400 of ." sub r4 #80000000" endof
+    $F1BE0601 of ." subs r6, lr, #1" endof
 
     $F8476D04 of ." str r6 [ r7 #-4 ]!" endof
     $F8576026 of ." ldr r6 [ r7 r6 lsl #2 ]" endof

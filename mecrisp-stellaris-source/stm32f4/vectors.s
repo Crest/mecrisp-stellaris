@@ -67,6 +67,18 @@
 .word nullhandler+1 @ Position 16: DMA1 Stream 5
 .word nullhandler+1 @ Position 17: DMA1 Stream 6
 .word irq_vektor_adc+1 @ Position 18: ADC global interrupts
+.word nullhandler+1 @ Position 19:
+.word nullhandler+1 @ Position 20:
+.word nullhandler+1 @ Position 21:
+.word nullhandler+1 @ Position 22:
+.word nullhandler+1 @ Position 23:
+.word nullhandler+1 @ Position 24:
+.word nullhandler+1 @ Position 25:
+.word nullhandler+1 @ Position 26:
+.word nullhandler+1 @ Position 27:
+.word irq_vektor_tim2+1 @ Position 28: Timer 2 global interrupt
+.word irq_vektor_tim3+1 @ Position 29: Timer 3 global interrupt
+.word irq_vektor_tim4+1 @ Position 30: Timer 4 global interrupt
 
 
 @ -----------------------------------------------------------------------------

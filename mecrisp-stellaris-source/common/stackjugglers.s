@@ -137,3 +137,9 @@ minusrot:
   pushdatos
   ldr tos, [sp]
   bx lr
+
+@------------------------------------------------------------------------------
+  Wortbirne Flag_visible|Flag_inline, "rdrop" @ Entfernt das oberste Element des Returnstacks
+@------------------------------------------------------------------------------
+  add sp, #4
+  bx lr

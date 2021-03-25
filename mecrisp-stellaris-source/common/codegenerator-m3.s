@@ -25,22 +25,22 @@ movwkomma: @ Register r0: Konstante                                    Constant
   pushdatos    @ Platz auf dem Datenstack schaffen 
   ldr tos, =0xf2400000 @ Opcode movw r0, #0
 
-  ldr  r1, =0x0000F000  @ Bit 16 - 13
+  movs r1, #0x0000F000  @ Bit 16 - 13
   ands r2, r0, r1       @ aus der Adresse maskieren   Mask bits of constant
   lsls r2, #4           @ passend schieben            shift them accordingly
   orrs tos, r2          @ zum Opcode hinzufügen       and OR them to opcode.
 
-  ldr  r1, =0x00000800  @ Bit 12
+  movs r1, #0x00000800  @ Bit 12
   ands r2, r0, r1       @ aus der Adresse maskieren   ...
   lsls r2, #15          @ passend schieben
   orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr  r1, =0x00000700  @ Bit 11 - 9
+  movs r1, #0x00000700  @ Bit 11 - 9
   ands r2, r0, r1       @ aus der Adresse maskieren
   lsls r2, #4           @ passend schieben
   orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr  r1, =0x000000FF  @ Bit 8 - 1
+  movs r1, #0x000000FF  @ Bit 8 - 1
   ands r2, r0, r1       @ aus der Adresse maskieren
   @ lsrs r2, #0         @ passend schieben
   orrs tos, r2          @ zum Opcode hinzufügen
@@ -57,22 +57,22 @@ movtkomma: @ Register r0: Konstante                                    Constant
   pushdatos    @ Platz auf dem Datenstack schaffen
   ldr tos, =0xf2c00000 @ Opcode movt r0, #0
 
-  ldr  r1, =0xF0000000  @ Bit 32 - 29
+  movs r1, #0xF0000000  @ Bit 32 - 29
   ands r2, r0, r1       @ aus der Adresse maskieren
   lsrs r2, #12          @ passend schieben
   orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr  r1, =0x08000000  @ Bit 28
+  movs r1, #0x08000000  @ Bit 28
   ands r2, r0, r1       @ aus der Adresse maskieren
   lsrs r2, #1           @ passend schieben
   orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr  r1, =0x07000000  @ Bit 27 - 25
+  movs r1, #0x07000000  @ Bit 27 - 25
   ands r2, r0, r1       @ aus der Adresse maskieren
   lsrs r2, #12          @ passend schieben
   orrs tos, r2          @ zum Opcode hinzufügen
 
-  ldr  r1, =0x00FF0000  @ Bit 24 - 17
+  movs r1, #0x00FF0000  @ Bit 24 - 17
   ands r2, r0, r1       @ aus der Adresse maskieren
   lsrs r2, #16          @ passend schieben
   orrs tos, r2          @ zum Opcode hinzufügen
@@ -84,26 +84,122 @@ movtkomma: @ Register r0: Konstante                                    Constant
 
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "movwmovt," @ ( x Register -- )
-movwmovtkomma:  @ Compile code to put a literal constant into a register.
-registerliteralkomma:
+  Wortbirne Flag_visible, "registerliteral," @ ( x Register -- )
+registerliteralkomma: @ Compile code to put a literal constant into a register.
 @ -----------------------------------------------------------------------------
   push {r0, r1, r2, r3, lr}
 
-  popda r3    @ Hole die Registermaske
-  lsls r3, #8 @ Den Register um 8 Stellen schieben
-  popda r0    @ Hole die Konstante
+  popda r3    @ Hole die Registermaske               Fetch register to generate constant for
+  lsls r3, #8 @ Den Register um 8 Stellen schieben   Shift register accordingly for opcode generation
+  popda r0    @ Hole die Konstante                   Fetch constant
+
+
+  @ Generiere movs-Opcode für sehr kleine Konstanten :-)
+  @ Generate short movs Opcode for small constants within 0 and 255
+
+  cmp r0, #0xFF @ Does literal fit in 8 bits ?
+  bhi 1f        @ Gewünschte Konstante passt in 8 Bits. 
+
+    @ Generate opcode for movs target, #...
+    pushdatos
+    movs tos, #0x2000 @ MOVS-Opcode
+    orrs tos, r3      @ OR with register
+    orrs tos, r0      @ OR with constant
+    bl hkomma
+    pop {r0, r1, r2, r3, pc}
+1:
+
+
+  @ Ist die gewünschte Konstante eine kleine negative Zahl ?
+  @ Is desired constant a small negative number ?
+
+  mvns r1, r0
+  cmp r1, #0xFF @ Does literal fit in 8 bits ?
+  bhi.n movwmovt_internal @ Gewünschte Konstante passt in 8 Bits. 
+
+    @ Generate opcode for movs target, #... with inverted value
+    pushdatos
+    movs tos, #0x2000 @ MOVS-Opcode
+    orrs tos, r3      @ OR with register
+    orrs tos, r1      @ OR with constant
+    bl hkomma
+
+    @ Generate opcode for mvns target, target
+    pushdatos
+    movw tos, #0x43C0 @ Opcode for mvns
+    lsrs r3, #8 @ Den Register um 8 Stellen zurückschieben
+    orrs tos, r3 @ OR with register
+    lsls r3, #3 
+    orrs tos, r3 @ OR with register
+    bl hkomma
+
+    pop {r0, r1, r2, r3, pc}
+
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "movwmovt," @ ( x Register -- )
+  @ Compile code to put a literal constant into any register.
+@ -----------------------------------------------------------------------------
+  push {r0, r1, r2, r3, lr}
+  
+  popda r3    @ Hole die Registermaske               Fetch register to generate constant for
+  lsls r3, #8 @ Den Register um 8 Stellen schieben   Shift register accordingly for opcode generation
+  popda r0    @ Hole die Konstante                   Fetch constant
+
+movwmovt_internal:
+  @ Long constant that cannot be encoded in a small and simple way.
+  @ Generate movw and movt pairs.
 
   bl movwkomma
 
-  ldr r1, =0xffff0000 @ High-Teil
-  ands r0, r1 @ If High-Part is zero there is no need to generate a movt opcode.
-  cmp r0, #0 @ Wenn der High-Teil Null ist, brauche ich keinen movt-Opcode mehr zu generieren.
-  beq 1f
+  @ ldr r1, =0xffff0000 @ High-Teil
+  @ ands r0, r1 
+  @ cmp r0, #0 
+
+  movw r1, #0xFFFF          @ Wenn der High-Teil Null ist, brauche ich keinen movt-Opcode mehr zu generieren.
+  ands r0, r0, r1, lsl #16  @ If High-Part is zero there is no need to generate a movt opcode.
+  beq 3f
 
     bl movtkomma @ Bei Bedarf einfügen
 
-1:pop {r0, r1, r2, r3, pc}
+3:pop {r0, r1, r2, r3, pc}
+
+
+  @ Agenda:
+
+  @ Is constant within the possibilities of the long movs/mvns Opcode ?
+  @ Can this constant be generated by rotating an 8 bit value ?
+
+  @ 8 Bit constant: 0000 00XY is encoded as | 0000 | XY |
+  @                 00XY 00XY is encoded as | 0001 | XY |
+  @                 XY00 XY00 is encoded as | 0010 | XY |
+  @                 XYXY XYXY is encoded as | 0011 | XY |
+  
+
+@ The assembler encodes the constant in an instruction into imm12, as described below. imm12 is mapped
+@ into the instruction encoding in hw1[10] and hw2[14:12,7:0], in the same order.
+
+@ Shifted 8-bit values
+@ If the constant lies in the range 0-255, then imm12 is the unmodified constant.
+@ Otherwise, the 32-bit constant is rotated left until the most significant bit is bit[7]. The size of the left
+@ rotation is encoded in bits[11:7], overwriting bit[7]. imm12 is bits[11:0] of the result.
+
+@ For example, the constant 0x01100000 has its most significant bit at bit position 24. To rotate this bit to
+@ bit[7], a left rotation by 15 bits is required. The result of the rotation is 0b10001000. The 12-bit encoding of
+@ the constant consists of the 5-bit encoding of the rotation amount 15 followed by the bottom 7 bits of this
+@ result, and so is 0b011110001000.
+
+@ Constants of the form 0x00XY00XY
+@ Bits[11:8] of imm12 are set to 0b0001, and bits[7:0] are set to 0xXY.
+@ This form is UNPREDICTABLE if bits[7:0] == 0x00.
+
+@ Constants of the form 0xXY00XY00
+@ Bits[11:8] of imm12 are set to 0b0010, and bits[7:0] are set to 0xXY.
+@ This form is UNPREDICTABLE if bits[7:0] == 0x00.
+
+@ Constants of the form 0xXYXYXYXY
+@ Bits[11:8] of imm12 are set to 0b0011, and bits[7:0] are set to 0xXY.
+@ This form is UNPREDICTABLE if bits[7:0] == 0x00.
 
 
 @ -----------------------------------------------------------------------------
@@ -140,7 +236,7 @@ callkommakurz: @ ( Zieladresse -- )
   adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
 
   pushdaconst 0 @ Register r0
-  bl movwmovtkomma
+  bl registerliteralkomma
 
 callkommakurz_intern:
   pushdaconstw 0x4780 @ blx r0
@@ -198,13 +294,13 @@ callkomma:  @ Versucht einen möglichst kurzen Aufruf einzukompilieren.
   lsrs r3, #1            @ Bottom bit ignored
     ldr r0, =0xF000F800  @ Opcode-Template
 
-    ldr r1, =0x7FF       @ Bottom 11 bits of immediate
+    movw r1, #0x7FF       @ Bottom 11 bits of immediate
     ands r1, r3
     orrs r0, r1
 
   lsrs r3, #11
 
-    ldr r1, =0x3FF       @ 10 more bits shifted to second half
+    movw r1, #0x3FF       @ 10 more bits shifted to second half
     ands r1, r3
     lsls r1, #16
     orrs r0, r1
@@ -232,36 +328,11 @@ literalkomma: @ Nur r3 muss erhalten bleiben  Save r3 !
   pushdaconstw 0x6d04
   bl hkomma
 
-  @ Neuigkeit: Generiere movs-Opcode für sehr kleine Konstanten :-)
-  @ Generate movs Opcode for small constants !
-  cmp tos, #0xFF
-  bhi 1f
-    @ Gewünschte Konstante passt in 8 Bits. Does literal fit in 8 bits ?
-    orrs tos, #0x2600 @ movs r6, #imm8 mit Zero-Extend
-    bl hkomma
-    pop {r3, pc}
-1:
-
-  @ Ist die gewünschte Konstante eine kleine negative Zahl ?
-  @ Is desired constant a small negative number ?
-  ands r3, tos, #0xFFFFFF00
-  cmp r3, #0xFFFFFF00
-  bne 2f
-
-    mvns tos, tos
-    ands tos, 0xFF
-    orrs tos, #0x2600
-    bl hkomma
-
-    pushdaconstw 0x43F6 @ Opcode: mvns tos, tos
-    bl hkomma
-    pop {r3, pc}
-2:
-
   pushdaconst 6 @ Gleich in r6=tos legen
-  bl movwmovtkomma
+  bl registerliteralkomma
 
   pop {r3, pc}
+
 
 /* Some tests:
 schuhu: push {lr} 
@@ -293,9 +364,7 @@ does: @ Gives freshly defined word a special action.
     @ Address is in LR which is something like "TOS in register" of return stack.
 
   pushdatos
-  mov tos, lr
-
-  subs tos, #1 @ Denn es ist normalerweise eine ungerade Adresse wegen des Thumb-Befehlssatzes.  Align address. It is uneven because of Thumb-instructionset bit set.
+  subs tos, lr, #1 @ Denn es ist normalerweise eine ungerade Adresse wegen des Thumb-Befehlssatzes.  Align address. It is uneven because of Thumb-instructionset bit set.
 
   @ Am Ende des Wortes wird ein pop {pc} stehen, und das kommt prima hin.
   @ At the end of the definition there will be a pop {pc}, that is fine.
@@ -320,9 +389,10 @@ dodoes:
   @ Prepare the destination address
 
   pushdatos
-  mov tos, lr  @ Brauche den Link danach nicht mehr, weil ich über die in dem Wort das does> enthält gesicherte Adresse rückspringe
+  subs tos, lr, #1
+               @ Brauche den Link danach nicht mehr, weil ich über die in dem Wort das does> enthält gesicherte Adresse rückspringe
                @ We don't need this Link later because we return with the address saved by the definition that contains does>.
-  subs tos, #1 @ Einen abziehen. Diese Adresse ist schon ungerade für Thumb-2, aber callkomma fügt nochmal eine 1 dazu. 
+               @ Einen abziehen. Diese Adresse ist schon ungerade für Thumb-2, aber callkomma fügt nochmal eine 1 dazu. 
                @ Subtract one. Adress is already uneven for Thumb-instructionset, but callkomma will add one anyway.
 
   bl fadenende_einsprungadresse @ Get the address the long call has to be inserted.

@@ -35,6 +35,37 @@ z .req r3
 tos .req r6
 psp .req r7
 
+
+@ -----------------------------------------------------------------------------
+@ Interrupt handler trampoline macro
+@ -----------------------------------------------------------------------------
+
+.macro interrupt Name
+
+@------------------------------------------------------------------------------
+  Wortbirne Flag_visible|Flag_variable, "irq-\Name" @ ( -- addr )
+  CoreVariable irq_hook_\Name
+@------------------------------------------------------------------------------  
+  pushdatos
+  ldr tos, =irq_hook_\Name
+  bx lr
+  .word nop_vektor  @ Startwert für unbelegte Interrupts   Start value for unused interrupts
+
+irq_vektor_\Name:
+  .ifdef m0core
+    ldr r0, =irq_hook_\Name
+  .else
+    movw r0, #:lower16:irq_hook_\Name
+    movt r0, #:upper16:irq_hook_\Name
+  .endif
+
+  ldr r0, [r0]
+  adds r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz             Uneven address for Thumb instruction set
+  mov pc, r0  @ Angesprungene Routine kehrt von selbst zurück...   Code returns itself
+
+.endm
+
+
 @ -----------------------------------------------------------------------------
 @ Datenstack-Makros
 @ Macros for Datastack

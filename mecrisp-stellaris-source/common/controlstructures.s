@@ -137,7 +137,7 @@ nullprobekomma: @ Write code for comparing TOS to zero.
   pop {pc}
 
 branch_r:     @ ( -- Sprungziel )  Einleitung bedingter und unbedingter Rückwärtssprung
-    b here    @ ( -- Target )      Intro of conditional and unconditional backwards jump
+    b.n here  @ ( -- Target )      Intro of conditional and unconditional backwards jump
 
 r_branch_jne: @ ( Sprungziel -- )  Abschluss besonderer bedingter Rückwärtssprung für loop
   push {lr}   @ ( Target -- )      Finalisation of special conditional backwards jump for loop
@@ -216,12 +216,12 @@ v_casebranch:  @ ( Adresse-für-Sprungbefehl -- ) Abschluss besonderer bedingter
   cmp tos, #5 @ Kommend aus Else-Zweig
   bne 1f
     drop @ ( Sprunglücke )    
-    b v_branch @ Abschluss unbedingter Vorwärtssprung  Fill in unconditional forward jummp
+    b.n v_branch @ Abschluss unbedingter Vorwärtssprung  Fill in unconditional forward jummp
 
 1:cmp tos, #2 @ Kommend aus IF-Zweig
   bne.n strukturen_passen_nicht
     drop @ ( Sprunglücke )
-    b v_nullbranch @ Abschluss bedingter Vorwärtssprung v_nullbranch  Fill in conditional forward jump
+    b.n v_nullbranch @ Abschluss bedingter Vorwärtssprung v_nullbranch  Fill in conditional forward jump
 
 strukturen_passen_nicht:
   Fehler_Quit "Structures don't match"
@@ -310,7 +310,7 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )   ( -- Address-for-Jump 2 )
   cmp tos, #1
   bne.n strukturen_passen_nicht
   drop
-  b r_nullbranch  @ Write conditional jump
+  b.n r_nullbranch  @ Write conditional jump
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_immediate_compileonly, "again"  @ Endlosschleife
@@ -319,7 +319,7 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )   ( -- Address-for-Jump 2 )
   cmp tos, #1
   bne.n strukturen_passen_nicht
   drop
-  b r_branch      @ Write unconditional jump
+  b.n r_branch      @ Write unconditional jump
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_immediate_compileonly, "begin"

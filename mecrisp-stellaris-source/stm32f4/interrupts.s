@@ -40,25 +40,6 @@ nop_vektor:                     @        Handler for unused Interrupts
   bx lr
 
 
-.macro interrupt Name
-
-@------------------------------------------------------------------------------
-  Wortbirne Flag_visible|Flag_variable, "irq-\Name" @ ( -- addr )
-  CoreVariable irq_hook_\Name
-@------------------------------------------------------------------------------  
-  stmdb psp!, {tos}
-  ldr tos, =irq_hook_\Name
-  bx lr
-  .word nop_vektor  @ Startwert für unbelegte Interrupts   Start value for unused interrupts
-
-irq_vektor_\Name:
-  ldr r0, =irq_hook_\Name
-  ldr r0, [r0]
-  adds r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz             Uneven address for Thumb instruction set
-  mov pc, r0  @ Angesprungene Routine kehrt von selbst zurück...   Code returns itself
-
-.endm
-
 @------------------------------------------------------------------------------
 @ Alle Interrupthandler funktionieren gleich und werden komfortabel mit einem Makro erzeugt:
 @ All interrupt handlers work the same way and are generated with a macro:
@@ -70,6 +51,9 @@ interrupt exti2
 interrupt exti3
 interrupt exti4
 interrupt adc
+interrupt tim2
+interrupt tim3
+interrupt tim4
 
 @------------------------------------------------------------------------------
 
