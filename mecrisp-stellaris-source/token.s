@@ -46,19 +46,12 @@ parse:
   ldrb r2, [r2]          @ Aktuellen Pufferstand
 
   ldr r3, =Tokenpuffer   @ Pointer für den Sammelpuffer
-  movs r4, #0             @ Zahl der aktuell gesammelten Zeichen
+  movs r4, #0            @ Zahl der aktuell gesammelten Zeichen
 
   @ TOS                  @ Gesuchtes Trennzeichen
 
-@  write "Parse: "
-@  pushda r2
-@  bl hexdot
-@  writeln " ist der Pufferstand"
-
   @ Beginne beim Pufferstand:
   adds r0, r2 @ Aktuellen Pufferstand zum Pointer hinzuaddieren
-
-
 
   @ Speziell for Token, falls das Trennzeichen das Leerzeichen ist:
   cmp tos, #32
@@ -71,7 +64,7 @@ parse:
     @ Hole ein Zeichen.  
     adds r0, #1 @ Eingabepufferzeiger um ein Zeichen weiterrücken.
     adds r2, #1 @ Pufferstand um ein Zeichen weiterschieben
-@    writeln "Hole vorab"
+
     @ Hole an der Stelle ein Zeichen und entscheide, was damit zu tun ist.
     ldrb r5, [r0]
     cmp r5, tos @ Ist es das Leerzeichen ?
@@ -90,7 +83,6 @@ parse:
   @ Zweiter Schritt: Hole ein Zeichen.  
   adds r0, #1 @ Eingabepufferzeiger um ein Zeichen weiterrücken.
   adds r2, #1 @ Pufferstand um ein Zeichen weiterschieben
-@  writeln "Hole"
   @ Hole an der Stelle ein Zeichen und entscheide, was damit zu tun ist.
   ldrb r5, [r0]
   cmp r5, tos    @ Wenn das Trennzeichen erreicht ist, höre auf.
@@ -100,7 +92,6 @@ parse:
   adds r3, #1 @ Pointer weiterschieben
   adds r4, #1 @ Zahl der gesammelten Zeichen weiterschieben
   strb r5, [r3]
-@  writeln "Sammele"
   b 2b @ Sammelschleife
 
 
@@ -108,10 +99,8 @@ parse:
   ldr r0, =Pufferstand
   strb r2, [r0]         @ Aktuellen Pufferstand vermerken.
 
-  ldr r3, =Tokenpuffer @ Zahl der gesammelten Zeichen vermerken
-  strb r4, [r3]
-
-  mov tos, r3 @ Tokenpufferadresse zurückgeben
+  ldr tos, =Tokenpuffer @ Tokenpufferadresse zurückgeben
+  strb r4, [tos]        @ Zahl der gesammelten Zeichen vermerken
 
   pop {r4, r5, lr}
   bx lr

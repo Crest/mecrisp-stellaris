@@ -17,7 +17,7 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the third experimental release of Mecrisp-Stellaris,
+This is the fourth experimental release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
 It runs out of the box on LM4F120H5QR chips.
@@ -36,9 +36,16 @@ inlining of short words.
 
 Communication is via serial 115200 baud 8N1 over UART0.
 
+Connect your cable to the Debug-USB-Port, 
+set "PWR SELECT" switch to DEBUG and
+close VDD jumper.
+
 Mecrisp-Stellaris itself is sending LF for line ending,
 but recognizes both LF and CR. Invoke Picocom with 
 picocom -b 115200 /dev/ttyACM0 --imap lfcrlf,crcrlf --omap delbs,crlf
+
+For changing line ending to CR-LF or whatever else you like, 
+look at the beginning of mecrisp-stellaris.s.
 
 Flashing is possible with lm4flash:
 https://github.com/utzig/lm4tools
@@ -51,7 +58,7 @@ Differences to stable Mecrisp for MSP430 are:
 
 * Experimental code ! Be brave, but expect monsters around the corner.
 
-* Comfortable hardware support as for analog input is on the way.
+* Comfortable hardware support is done in Forth this time.
    You can contribute your favourite hardware handling routines 
    to be included in upcoming releases !
 
@@ -470,7 +477,19 @@ limit index   do ... [one or more leave(s)] ... loop
         nop             ( -- ) No Operation. Hook for unused IRQs !
 
         irq-systick     ( -- a-addr ) Memory locations for IRQ-Hooks
+        irq-porta
+        irq-portb
+        irq-portc
+        irq-portd
+        irq-porte
+        irq-portf
+        irq-timer0a
+        irq-timer0b
+        irq-timer1a
+        irq-timer1b
+        irq-timer2a
+        irq-timer2b
 
-  More coming soon...
+  Look into vectors.s and interrupts.s to add more interrupts.
 
 Matthias Koch, Summer 2013

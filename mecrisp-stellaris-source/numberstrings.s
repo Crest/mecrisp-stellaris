@@ -32,58 +32,46 @@ digit: @ Erwartet Base in r3
   ldr r3, [r3]
   
 digit_base_r3:
-
-  push {r0}
-  popda r0      @ Zeichen holen
-  subs r0, #48  @ "0" abziehen.
+  subs tos, #48 @ "0" abziehen.
   blo 5f        @ negativ --> Zeichen war "unter Null"
 
-  cmp r0, #10   @ Im Bereich bis "9" ?
+  cmp tos, #10  @ Im Bereich bis "9" ?
   blo 4f        @ Ziffer korrekt erkannt.
 
   @ Nein: Also ist die Ziffer nicht in den Zahlen 0-9 enthalten gewesen.
   @ Prüfe Buchstaben.
 
-  subs r0, #7    @ Anfang der Großbuchstaben, "A"
-  cmp r0, #10   @ Buchstabenwerte beginnen bei 10
+  subs tos, #7  @ Anfang der Großbuchstaben, "A"
+  cmp tos, #10  @ Buchstabenwerte beginnen bei 10
   blo 5f        @ --> Zeichen war ein Sonderzeichen zwischen Ziffern und Großbuchstaben.
 
-  cmp r0, #36   @ Es gibt 26 Buchstaben.
+  cmp tos, #36  @ Es gibt 26 Buchstaben.
   blo 4f        @ In dem Bereich: Ziffer korrekt erkannt.
 
   @ Für den Fall, dass die Ziffer immer noch nicht erkannt ist, probiere es mit den Kleinbuchstaben.
 
-  subs r0, #32   @ Schiebe zum Anfang der Kleinbuchstaben, "A"
-  cmp r0, #10   @ Buchstabenwerte beginnen bei 10
+  subs tos, #32 @ Schiebe zum Anfang der Kleinbuchstaben, "A"
+  cmp tos, #10  @ Buchstabenwerte beginnen bei 10
   blo 5f        @ --> Zeichen war ein Sonderzeichen zwischen Großbuchstaben und Kleinbuchstaben.
 
-  cmp r0, #36   @ Es gibt 26 Buchstaben.
+  cmp tos, #36  @ Es gibt 26 Buchstaben.
   blo 4f        @ In dem Bereich: Ziffer korrekt erkannt.
 
   @ Immer noch nicht ? Dann ist das ein Sonderzeichen oberhalb der Kleinbuchstaben oder ein Unicode-Zeichen.
   @ Keine gültige Ziffer.
 
 5: @ Aussprung mit Fehler 
-  movs r0, #0    @ False-Flag
-  pushda r0     @ bereitlegen
-  pop {r0}
+  movs tos, #0    @ False-Flag
   bx lr
 
-4: @ Korrekt erkannt. Ziffer in r0 
+4: @ Korrekt erkannt. Ziffer in tos 
 
-  @ ; Prüfe nun noch, ob die Ziffer innerhalb der Basis liegt !
-  @ cmp &Base, r10
-  @ jhs -          ; Außerhalb der Basis werden keine Buchstaben als Zahlen akzeptiert.
+  @ Prüfe nun noch, ob die Ziffer innerhalb der Basis liegt !
+  cmp tos, r3 @ r3 enthält von number aus die Basis.
+  bhs 5b     @ Außerhalb der Basis werden keine Buchstaben als Zahlen akzeptiert.
 
-  cmp r0, r3 @ r3 enthält von number aus die Basis.
-  bhs 5b
-
-  pushda r0
-  movs r0, #-1   @ True-Flag
-  pushda r0     @ bereitlegen
-  pop {r0}
+  pushdaconst -1 @ True-Flag bereitlegen
   bx lr
-
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "number" @ ( Addr -- n 1 | 0 ) Versucht den String in eine Zahl zu verwandeln.
@@ -99,35 +87,31 @@ number:
     ; Wiederholen.
 */
 
-  push {r0, r1, r2, r3, r4, r5, lr}
+  push {r0, r1, r2, r3, r4, lr}
 
-  popda r0 @ Hole die Stringadresse
+  mov r0, tos   @ Hole die Stringadresse
   ldrb r1, [r0] @ Hole die Länge des Strings
 
-  movs r2, #0  @ Am Anfang noch keine Resultate
+  movs tos, #0  @ Am Anfang noch keine Resultate
 
-  @mov r3, #10 @ Base
+  movs r2, #1  @ Positiv oder Negativ ?
+
   ldr r3, =base
   ldr r3, [r3]
-  
-  movs r5, #1  @ Positiv oder Negativ ?
 
 1: @ Sind noch Zeichen da ?
-@  writeln "Schleife"
   cmp r1, #0
   beq 4f @ String ist leer, bin fertig !
 
-@  writeln "Zeichen holen"
   @ Hole ein Zeichen:
   adds r0, #1 @ Pointer weiterrücken
   subs r1, #1 @ Länge um eins verringern
   ldrb r4, [r0] @ Zeichen holen.
 
-
-@ Vorzeichen und Basisvorsilben:
+  @ Vorzeichen und Basisvorsilben:
   cmp r4, #45   @ Minus ?
   itt eq
-  moveq r5, #-1
+  moveq r2, #-1
   beq 1b
 
   cmp r4, #35   @ # ?
@@ -145,42 +129,29 @@ number:
   moveq r3, #2  @ Umschalten auf Binär
   beq 1b
 
-
   @ Wandele das Zeichen
   pushda r4
-@ bl dots
-
   bl digit_base_r3
-@  writeln "Gewandelt"
-@ bl dots
-  popda r4 @ Flag.
-  cmp r4, #0 @ Bei false mochte digit das Zeichen nicht.
-  beq 5f     @ Aussprung mit Fehler.
+  cmp tos, #0 @ Bei false mochte digit das Zeichen nicht.
+  drop        @ Flag runterwerfen
+    beq 5f      @ Aussprung mit Fehler.
 
-@  writeln "Zeichen gemocht"
   @ Zeichen wurde gemocht.
   popda r4 @ Ziffer holen
 
-  mla r2, r2, r3, r4 @ (Zahl * Basis) + Ziffer
-@  mul r2, r2, r3
-@  add r2, r4
+  mla tos, tos, r3, r4 @ (Zahl * Basis) + Ziffer
   b 1b
   
 
-4: @ String ist leer und wurde korrekt umgewandelt.
-
+4:@ String ist leer und wurde korrekt umgewandelt.
   @ Vorzeichen beachten:
-  muls r2, r2, r5 @ Mit 1 oder -1 malnehmen.
-  pushda r2   @ Zahl
-
-  movs r2, #1 @ True, 1 Stackelement von der Zahl belegt
-  pushda r2
-  pop {r0, r1, r2, r3, r4, r5, pc} @ Rücksprung
+  muls tos, tos, r2 @ Mit 1 oder -1 malnehmen.
+  pushdaconst 1     @ True, 1 Stackelement von der Zahl belegt
+  pop {r0, r1, r2, r3, r4, pc} @ Rücksprung
 
 5: @ Digit mochte das Zeichen nicht.
-  movs r2, #0
-  pushda r2
-  pop {r0, r1, r2, r3, r4, r5, pc}
+  movs tos, #0
+  pop {r0, r1, r2, r3, r4, pc}
 
 
 @ -----------------------------------------------------------------------------
@@ -194,19 +165,17 @@ number:
                @ werden nicht druckbare Zeichen einfach mit # beschrieben.
 digitausgeben:
 @ -----------------------------------------------------------------------------
-  popda r0      @ Ziffer holen
-  cmp r0, #10   @ Von 0-9:
+  cmp tos, #10   @ Von 0-9:
   itt lo
-  addlo r0, #48 @ Schiebe zum Anfang der Zahlen
+  addlo tos, #48 @ Schiebe zum Anfang der Zahlen
   blo 1f
 
-  cmp r0, #36   @ Von A-Z:
-  ite lo        @ Schiebe zum Anfang der Großbuchstaben - 10 = 55.
-  addlo r0, #55 @ Alternative für Kleinbuchstaben: 87.
-  movhs r0, #35 @ Zeichen #, falls diese Ziffer nicht darstellbar ist
+  cmp tos, #36   @ Von A-Z:
+  ite lo         @ Schiebe zum Anfang der Großbuchstaben - 10 = 55.
+  addlo tos, #55 @ Alternative für Kleinbuchstaben: 87.
+  movhs tos, #35 @ Zeichen #, falls diese Ziffer nicht darstellbar ist
 
-1:pushda r0     @ Zeichen zurückschreiben
-  bx lr
+1:bx lr
 
 
 @ -----------------------------------------------------------------------------
@@ -264,23 +233,19 @@ vorzeichen: @ ( Vorzeichen -- )
       @ Prüft die Zahl auf dem Stack auf ihr Vorzeichen hin und
       @ fügt bei Bedarf ein Minus an den Ziffernstring an.
 @------------------------------------------------------------------------------
-  popda r0
-
-  cmp r0, #0
+  cmp tos, #0
   bmi 1f
+  drop
   bx lr
 
-1:pushdaconst 45 @ Minuszeichen
-  b hold         @ an den Zahlenpuffer anhängen
+1:movs tos, #45  @ Minuszeichen
+  b.n hold         @ an den Zahlenpuffer anhängen
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "#>" @ ( ZahlenrestL (ZahlenrestH) -- Addr )
 zifferstringende:  @ Schließt einen neuen Ziffernstring ab und gibt seine Adresse zurück.
                    @ Benutzt dafür einfach den Zahlenpuffer.
 @------------------------------------------------------------------------------
-@  ifdef doppeltzahleneinbinden
-@    drop
-@  endif
   ldr tos, =Zahlenpuffer @ Rest überschreiben, einfach in TOS legen.
   bx lr
 

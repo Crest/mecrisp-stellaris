@@ -23,15 +23,15 @@
   Wortbirne Flag_visible, "here" @ ( -- addr ) 
 here: @ Gibt den Dictionarypointer zurück
 @ -----------------------------------------------------------------------------
-  ldr r0, =Dictionarypointer
-  ldr r1, [r0] @ Hole den Dictionarypointer
-  pushda r1
+  stmdb psp!, {tos}    @ Platz auf dem Datenstack schaffen 
+  ldr tos, =Dictionarypointer
+  ldr tos, [tos] @ Hole den Dictionarypointer
   bx lr
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_immediate|Flag_foldable_0, "[']" @ Sucht das nächste Wort im Eingabestrom
 @------------------------------------------------------------------------------
-  b tick @ So sah das mal aus: ['] ' immediate 0-foldable ;
+  b.n tick @ So sah das mal aus: ['] ' immediate 0-foldable ;
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "'"
@@ -111,93 +111,89 @@ nicht_gefunden:
 
 @ -----------------------------------------------------------------------------
 movwkomma: @ Register r0: Konstante
-           @ Register r4: Zielregister, fertig geschoben zum Verodern
+           @ Register r3: Zielregister, fertig geschoben zum Verodern
 @ -----------------------------------------------------------------------------
-  ldr r3, =0xf2400000  @ Opcode movw r0, #0
+  stmdb psp!, {tos}    @ Platz auf dem Datenstack schaffen 
+  ldr tos, =0xf2400000 @ Opcode movw r0, #0
 
   ldr r1, =0x0000F000  @ Bit 16 - 13
   and r2, r0, r1       @ aus der Adresse maskieren
   lsl r2, #4           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
+  orr tos, r2          @ zum Opcode hinzufügen
 
   ldr r1, =0x00000800  @ Bit 12
   and r2, r0, r1       @ aus der Adresse maskieren
   lsl r2, #15          @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
+  orr tos, r2          @ zum Opcode hinzufügen
 
-  @ Richtig:
   ldr r1, =0x00000700  @ Bit 11 - 9
   and r2, r0, r1       @ aus der Adresse maskieren
   lsl r2, #4           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
+  orr tos, r2          @ zum Opcode hinzufügen
 
-  @ Richtig:
   ldr r1, =0x000000FF  @ Bit 8 - 1
   and r2, r0, r1       @ aus der Adresse maskieren
-  @ lsr r2, #0           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
+  @ lsr r2, #0         @ passend schieben
+  orr tos, r2          @ zum Opcode hinzufügen
 
-  @ Zweiter Opcode ist fertig.
   @ Füge den gewünschten Register hinzu:
-  orr r3, r4
+  orr tos, r3
   
-  pushda r3
-  b reversekomma @ movw
+  b.n reversekomma @ movw
 
 @ -----------------------------------------------------------------------------
 movtkomma: @ Register r0: Konstante
-           @ Register r4: Zielregister, fertig geschoben zum Verodern
+           @ Register r3: Zielregister, fertig geschoben zum Verodern
 @ -----------------------------------------------------------------------------
-  ldr r3, =0xf2c00000  @ Opcode movt r0, #0
+  stmdb psp!, {tos}    @ Platz auf dem Datenstack schaffen
+  ldr tos, =0xf2c00000 @ Opcode movt r0, #0
 
   ldr r1, =0xF0000000  @ Bit 32 - 29
   and r2, r0, r1       @ aus der Adresse maskieren
-  lsr r2, #12           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
+  lsr r2, #12          @ passend schieben
+  orr tos, r2          @ zum Opcode hinzufügen
 
   ldr r1, =0x08000000  @ Bit 28
   and r2, r0, r1       @ aus der Adresse maskieren
   lsr r2, #1           @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
+  orr tos, r2          @ zum Opcode hinzufügen
 
   ldr r1, =0x07000000  @ Bit 27 - 25
   and r2, r0, r1       @ aus der Adresse maskieren
   lsr r2, #12          @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
+  orr tos, r2          @ zum Opcode hinzufügen
 
   ldr r1, =0x00FF0000  @ Bit 24 - 17
   and r2, r0, r1       @ aus der Adresse maskieren
   lsr r2, #16          @ passend schieben
-  orr r3, r2           @ zum Opcode hinzufügen
+  orr tos, r2          @ zum Opcode hinzufügen
 
   @ Füge den gewünschten Register hinzu:
-  orr r3, r4
+  orr tos, r3
 
-  pushda r3
-  b reversekomma @ movt
+  b.n reversekomma @ movt
 
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "movwmovt," @ ( x Registermaske -- )
 movwmovtkomma:
 @ -----------------------------------------------------------------------------
-  push {r0, r1, r2, r3, r4, lr}
+  push {r0, r1, r2, r3, lr}
 
-  popda r4 @ Hole die Registermaske
-  lsl r4, #8 @ Den Register um 8 Stellen schieben
-
-  popda r0 @ Hole die Konstante
+  popda r3    @ Hole die Registermaske
+  lsls r3, #8 @ Den Register um 8 Stellen schieben
+  popda r0    @ Hole die Konstante
 
   bl movwkomma
 
   ldr r1, =0xffff0000 @ High-Teil
-  and r0, r1
+  ands r0, r1
   cmp r0, #0 @ Wenn der High-Teil Null ist, brauche ich keinen movt-Opcode mehr zu generieren.
   beq 1f
 
-    bl movtkomma
+    bl movtkomma @ Bei Bedarf einfügen
 
-1:pop {r0, r1, r2, r3, r4, pc}
+1:pop {r0, r1, r2, r3, pc}
 
 
 @ -----------------------------------------------------------------------------
@@ -208,20 +204,15 @@ callkommalang: @ ( Zieladresse -- ) Schreibt einen LANGEN Call-Befehl für does>
   @ Schreibe einen ganz langen Sprung ins Dictionary !
   @ Wichtig für <builds does> wo die Lückengröße vorher festliegen muss.
 
-  push {r0, r1, r2, r3, r4, lr}
-    @writeln "Callkommalang"
+  push {r0, r1, r2, r3, lr}
   adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
 
-  popda r0    @ Zieladresse holen
-  mov r4, #0  @ Register r0 wählen
+  popda r0     @ Zieladresse holen
+  movs r3, #0  @ Register r0 wählen
   bl movwkomma
   bl movtkomma
 
   b.n callkommakurz_intern
-@  pushdaconst 0x4780 @ blx r0
-@  bl hkomma
-@  pop {r0, r1, r2, r3, r4, pc}  
-
 
 @ -----------------------------------------------------------------------------
 callkommakurz: @ ( Zieladresse -- )
@@ -231,16 +222,16 @@ callkommakurz: @ ( Zieladresse -- )
   @ Dies ist ein bisschen schwierig und muss nochmal gründlich optimiert werden.
   @ Gedanke: Für kurze Call-Distanzen die BL-Opcodes benutzen.
 
-  push {r0, r1, r2, r3, r4, lr}
-    @writeln "Callkommakurz"
+  push {r0, r1, r2, r3, lr}
   adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz
 
   pushdaconst 0 @ Register r0
   bl movwmovtkomma
+
 callkommakurz_intern:
   pushdaconst 0x4780 @ blx r0
   bl hkomma
-  pop {r0, r1, r2, r3, r4, pc}  
+  pop {r0, r1, r2, r3, pc}  
 
 
 @ -----------------------------------------------------------------------------
@@ -325,35 +316,35 @@ callkomma:  @ Versucht einen möglichst kurzen Aufruf einzukompilieren.
   Wortbirne Flag_visible, "inline," @ ( addr -- )
 inlinekomma:
 @ -----------------------------------------------------------------------------
-  push {r4, lr}
+  push {lr}
   @ Übernimmt eine Routine komplett und schreibt sie ins Dictionary.
-  popda r0 @ Die Adresse der Routine, die eingefügt werden soll.
+  @ TOS enthält Adresse der Routine, die eingefügt werden soll.
 
   @ Es gibt drei besondere Opcodes:
   @  - push {lr} wird übersprungen
   @  - pop {pc} ist Ende
   @  - bx lr ist auch eine Endezeichen.
 
-  mov r2, #0xb500 @ push {lr}
-  mov r3, #0xbd00 @ pop {pc}
-  movw r4, #0x4770 @ bx lr
+  movs r1, #0xb500 @ push {lr}
+  movs r2, #0xbd00 @ pop {pc}
+  movw r3, #0x4770 @ bx lr
 
-1:ldrh r1, [r0] @ Hole die nächsten 16 Bits aus der Routine.
-  cmp r1, r2 @ push {lr}
+1:ldrh r0, [tos] @ Hole die nächsten 16 Bits aus der Routine.
+  cmp r0, r1 @ push {lr}
   beq 2f
-
-  cmp r1, r3 @ pop {pc}
+  cmp r0, r2 @ pop {pc}
   beq 3f
-  cmp r1, r4 @ bx lr
+  cmp r0, r3 @ bx lr
   beq 3f
 
-  pushda r1
+  pushda r0
   bl hkomma @ Opcode einkompilieren
 
-2:adds r0, #2 @ Pointer weiterrücken
+2:adds tos, #2 @ Pointer weiterrücken
   b 1b 
 
-3:pop {r4, pc}
+3:drop
+  pop {pc}
 
 @ An der ersten Stelle wird geprüft: Ist es eine Routine mit pop {pc} oder mit bx lr am Ende ?
 @ -----------------------------------------------------------------------------
@@ -453,13 +444,6 @@ fadenende_einsprungadresse: @ Kleines Helferlein spart Platz
 schuhu: push {lr} 
         writeln "Es sitzt der Uhu auf einem Baum und macht Schuhuuuu, Schuhuuuu !"
         pop {pc}
-*/
-
-
-/*
-  movw r4, #:lower16:schuhu+1
-  movt r4, #:upper16:schuhu+1
-  pushda r4
 
 : c <builds $12345678 , does> . ." does>-Teil " ;  c uhu ' uhu dump
 : con <builds h, does> h@ ;  42 con antwort    antwort .

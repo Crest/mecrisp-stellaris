@@ -169,8 +169,7 @@ words: @ Malt den Dictionaryinhalt
         write "Name: "
         bl type
 
-        pushdaconst 10 @ writeln " :-)"
-        bl emit
+        writeln ""
 
         @ Link prüfen:
         cmp r2, #-1    @ Ungesetzter Link bedeutet Ende erreicht

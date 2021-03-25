@@ -102,18 +102,6 @@ jumpgenerator: @ ( Adresse-der-Opcodelücke Sprungziel -- )
 @ Verschiedene Sprünge, die von den Kontrollstrukturen gebracht werden.
 @------------------------------------------------------------------------------
 
-
-@  beq.n 1f
-@  drop
-@1: drop
-
- @ cmp tos, #0
- @ drop
- @ beq branch_v
-
-@    132e:	2e00      	cmp	r6, #0
-@    1330:	cf40      	ldmia	r7!, {r6}
-
 nullprobekomma:
   push {lr}
   pushdaconst 0x2e00 @ cmp tos, #0
@@ -314,7 +302,3 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )
   Wortbirne Flag_immediate_compileonly, "exit" @ Kompiliert ein ret mitten in die Definition.
 @------------------------------------------------------------------------------
   b retkomma
-
-@ : viel begin [ .s ] ." Huhu " key 27 =  [ .s ] until ;
-@ : viel begin [ .s ] 1 [ .s ] until ;
-@ : taste begin ?key until ; Funktioniert.

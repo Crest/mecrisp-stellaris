@@ -204,7 +204,6 @@ interpret:
 7:
   @ Ist eine Konstante da, schreibe sie !
   
-
   movs r5, #0   @ Konstantenfaltungszeiger löschen
   str r5, [r4]
 
@@ -260,8 +259,3 @@ quit_innenschleife:
   bl interpret
   writeln " ok."
   b.n quit_innenschleife
-
-@------------------------------------------------------------------------------
-@  Wortbirne Flag_visible, "start"
-@------------------------------------------------------------------------------
-@  b Reset_mit_Inhalt @ Alter Inhalt vom Flash-Dictionary bleibt erhalten :-)

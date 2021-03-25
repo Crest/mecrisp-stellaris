@@ -20,17 +20,14 @@
   Wortbirne Flag_visible, "query"
 query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
 @ -----------------------------------------------------------------------------
-        push    {r0, r1, r2, r3, r4, lr}
-
+        push    {r0, r1, r2, r3, lr}
 
         ldr r0, =Pufferstand @ Aktueller Offset in den Eingabepuffer
         movs r1, #0
         strb r1, [r0]
 
-
-        @ Normal loslegen
-        ldr     r1, =Eingabepuffer @ Pufferadresse holen
-        movs    r2, #0             @ Momentaner Pufferfüllstand Null
+        ldr  r1, =Eingabepuffer @ Pufferadresse holen
+        movs r2, #0             @ Momentaner Pufferfüllstand Null
 
 1:      @ Queryschleife
         bl key              @ Tastendruck holen
@@ -47,19 +44,11 @@ query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
         cmp     r0, #8            @ Backspace
         bne     1b                @ Alle anderen Steuerzeichen ignorieren
 
+          cmp     r2, #0            @ Null Zeichen im Puffer ? Dann ist nichts zu löschen da.
+          beq     1b
 
-        cmp     r2, #0            @ Null Zeichen im Puffer ? Dann ist nichts zu löschen da.
-        beq     1b
-
-        movs r0, #8                @ .byte 3, 8, 32, 8  Cursor einen Schritt zurück. Mit Leerzeichen überschreiben. Nochmal zurück.
-        pushda r0
-        bl emit
-        movs r0, #32
-        pushda r0
-        bl emit
-        movs r0, #8
-        pushda r0
-        bl emit
+          bl dotgaensefuesschen
+          .byte 3, 8, 32, 8  @ Cursor einen Schritt zurück. Mit Leerzeichen überschreiben. Nochmal zurück.
 
 /*
   @ Ohne Unicode:
@@ -81,16 +70,16 @@ query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
       @ Hole das letzte Zeichen und schneide es ab.
       mov     r3, r1            @ Pufferadresse kopieren
       adds    r3, r2            @ Füllstand hinzuaddieren
-      ldrb    r4, [r3]          @ Letztes Zeichen im Puffer holen
+      ldrb    r0, [r3]          @ Letztes Zeichen im Puffer holen
       subs    r2, #1            @  und abschneiden
 
       @ Teste das Zeichen auf Unicode, oberstes Bit gesetzt ?
-      tst r4, 0x80
+      tst r0, 0x80
       beq 1b @ Wenn nein, dann war das ein normales Zeichen und ich bin schon fertig.
 
       @ Ansonsten könnten noch mehr Unicode-Zeichen folgen.
       @ Zeichen das erste Byte eines Unicode-Zeichens ?
-      tst r4, 0x40
+      tst r0, 0x40
       beq 4b @ Wenn nein, lösche ein weiteres Zeichen.      
       b 1b   @ Wenn ja, fertig. Dann habe ich soeben das erste Byte eines Unicode-Zeichens entfernt.
        
@@ -101,16 +90,14 @@ query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
 
         pushda r0
         bl emit                   @ Zeichen ausgeben
-        adds     r2, #1            @ Pufferfüllstand erhöhen
+        adds    r2, #1            @ Pufferfüllstand erhöhen
         mov     r3, r1            @ Pufferadresse kopieren
-        adds     r3, r2            @ Füllstand hinzuaddieren
+        adds    r3, r2            @ Füllstand hinzuaddieren
         strb    r0, [r3]          @ Zeichen in Puffer speichern
         b       1b
 
-3:      movs    r0, #32           @ Statt des Zeilenumbruches ein LEerzeichen ausgeben
-        pushda r0
+3:      strb    r2, [r1]          @ Pufferfüllstand schreiben
+        pushdaconst 32            @ Statt des Zeilenumbruches ein Leerzeichen ausgeben
         bl emit
-
-        strb    r2, [r1]          @ Pufferfüllstand schreiben
-        pop     {r0, r1, r2, r3, r4, pc}
+        pop {r0, r1, r2, r3, pc}
  

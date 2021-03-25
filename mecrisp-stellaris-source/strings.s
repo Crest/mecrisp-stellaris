@@ -34,54 +34,53 @@
   Wortbirne Flag_visible, "compare"
 compare: @ ( str1 str2 -- f ) Vergleicht zwei Strings
 @ -----------------------------------------------------------------------------
-   push    {r0, r1, r2, r3, r4, lr}
+   push {r0, r1, r2, r3, lr}
 
    popda r0
-   popda r1
 
-   ldrb    r2, [r0]          @ Hole das Längenbyte des ersten  Strings
-   ldrb    r3, [r1]          @ Hole das Längenbyte des zweiten Strings
+   ldrb    r1, [tos]         @ Hole das Längenbyte des ersten  Strings
+   ldrb    r2, [r0]          @ Hole das Längenbyte des zweiten Strings
 
    @ Längenbyte vergleichen
-   cmp     r2, r3            @ Sind sie gleich lang ?
+   cmp     r1, r2            @ Sind sie gleich lang ?
    bne     2f                @ Wenn nicht, sind die Strings ungleich.
    @ Länge ist gleich. Ist sie Null ? Dann ist nichts zum Vergleichen da.
    b 4f @ Beginne mit der Probe, ob noch etwas da ist.
 
    @ Länge größer als Null, vergleiche also Byte für Byte.
-1: adds r0, #1                @ Zeiger weiterrücken
-   adds r1, #1
+1: adds tos, #1               @ Zeiger weiterrücken
+   adds r0, #1
 
-   ldrb r3, [r0]              @ Hole ein Zeichen aus dem ersten String
-   ldrb r4, [r1]              @ Hole ein Zeichen aus dem zweiten String
+   ldrb r2, [tos]             @ Hole ein Zeichen aus dem ersten String
+   ldrb r3, [r0]              @ Hole ein Zeichen aus dem zweiten String
 
    @ Beide Zeichen in Kleinbuchstaben verwandeln.
+   lowercase r2
    lowercase r3
-   lowercase r4
 
    @ Zeichen vergleichen
-   cmp     r3, r4            @ Sind die Zeichen gleich ?
+   cmp     r2, r3            @ Sind die Zeichen gleich ?
    bne     2f                @ Wenn nicht, sind die Strings ungleich.
 
-   subs r2, #1               @ Ein Zeichen weniger
-4: cmp r2, #0                @ Sind noch Zeichen übrig ?
+   subs r1, #1               @ Ein Zeichen weniger
+4: cmp r1, #0                @ Sind noch Zeichen übrig ?
    bne 1b
 
    @ Gleich !
-   movs r0, #-1
+   movs tos, #-1
    b 3f
 
 2: @ Ungleich !
-   movs r0, #0
+   movs tos, #0
 
-3: pushda r0
-   pop {r0, r1, r2, r3, r4, pc}
+3: pop {r0, r1, r2, r3, pc}
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "cr" @ Zeilenumbruch
 @ -----------------------------------------------------------------------------
-  pushdaconst 10
-  b.n emit
+  push {lr}
+  writeln ""
+  pop {pc}
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "bl" @ Leerzeichen-code

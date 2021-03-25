@@ -130,12 +130,6 @@ hflash_gerade:
   @ Schreibt ein einzelnes Byte in den Flash.
 c_flashkomma:
 @ -----------------------------------------------------------------------------
-
-@  push {lr}
-@  write "cflash!: " @ Mal gucken, was hier ankommt.
-@  bl dots
-@  pop {lr}
-
   popda r0 @ Adresse
   popda r1 @ Inhalt.
 

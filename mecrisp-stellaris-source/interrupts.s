@@ -39,50 +39,62 @@ nop_vektor:
   bx lr
 
 
+.macro interrupt Name
+
 @------------------------------------------------------------------------------
-  Wortbirne Flag_visible|Flag_variable, "irq-systick" @ ( -- addr )
-  CoreVariable irq_hook_systick
+  Wortbirne Flag_visible|Flag_variable, "irq-\Name" @ ( -- addr )
+  CoreVariable irq_hook_\Name
 @------------------------------------------------------------------------------  
   stmdb psp!, {tos}
-  ldr tos, =irq_hook_systick
+  ldr tos, =irq_hook_\Name
   bx lr
   .word nop_vektor  @ Startwert für unbelegte Interrupts
 
-irq_vektor_systick:
-  ldr r0, =irq_hook_systick
+irq_vektor_\Name:
+  ldr r0, =irq_hook_\Name
   ldr r0, [r0]
   adds r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz
   mov pc, r0  @ Angesprungene Routine kehrt von selbst zurück...
 
-/*
-  push {r4, r5, r6, r7, lr} @ Alles Wesentliche sichern.
-    ldr r0, =irq_hook_systick
-    ldr r0, [r0]
-    pushda r0
-    bl execute
-  pop  {r4, r5, r6, r7, lr} @ Alles Wesentliche zurückholen.
-  bx lr
-*/
+.endm
+
+@------------------------------------------------------------------------------
+@ Alle Interrupthandler funktionieren gleich und werden komfortabel mit einem Makro erzeugt:
+@------------------------------------------------------------------------------
+interrupt systick
+interrupt porta
+interrupt portb
+interrupt portc
+interrupt portd
+interrupt porte
+interrupt portf
+interrupt timer0a
+interrupt timer0b
+interrupt timer1a
+interrupt timer1b
+interrupt timer2a
+interrupt timer2b
+@------------------------------------------------------------------------------
 
 /*
   Zu den Registern, die gesichert werden müssen:
-  r0  Wird von IRQ-Einsprung gesichert
-  r1  Wird von IRQ-Einsprung gesichert
-  r2  Wird von IRQ-Einsprung gesichert
-  r3  Wird von IRQ-Einsprung gesichert
+  r 0  Wird von IRQ-Einsprung gesichert
+  r 1  Wird von IRQ-Einsprung gesichert
+  r 2  Wird von IRQ-Einsprung gesichert
+  r 3  Wird von IRQ-Einsprung gesichert
 
-  r4    Unbedingt noch sichern - werden nun in jeder Routine vor Benutzung gesichert
-  r5    Unbedingt noch sichern - werden nun in jeder Routine vor Benutzung gesichert
-  r6  TOS - müsste eigentlich von sich aus funktionieren
-  r7  PSP - müsste eigentlich von sich aus funktionieren
+  r 4    Schleifenindex und Arbeitsregister, wird vor Benutzung gesichert
+  r 5    Schleifenlimit und Arbeitsregister, wird vor Benutzung gesichert
+  r 6  TOS - müsste eigentlich von sich aus funktionieren
+  r 7  PSP - müsste eigentlich von sich aus funktionieren
 
-  r8  Unbenutzt
-  r9  Unbenutzt
-  r10 Schleifenindex, wird vor Benutzung gesichert
-  r11 Schleifenlimit, wird vor Benutzung gesichert
-  r12 Unbenutzt, wird von IRQ-Einsprung gesichert
+  r 8  Unbenutzt
+  r 9  Unbenutzt
+  r 10 Unbenutzt
+  r 11 Unbenutzt
+  r 12 Unbenutzt, wird von IRQ-Einsprung gesichert
 
-  r13 = sp
-  r14 = lr
-  r15 = pc
+  r 13 = sp
+  r 14 = lr
+  r 15 = pc
 */

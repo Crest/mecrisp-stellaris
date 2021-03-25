@@ -25,3 +25,11 @@
   - Mecrisp-Stellaris now generates smaller code
   - Tidied up debug messages
   - Lots of small changes
+
+23.06.2013, Matthias Koch, Mecrisp-Stellaris 0.4 experimental:
+
+  - Examples in Forth for Analog, Timer, PWM and Interrupts
+  - Interrupt handling for Ports and Timers included
+  - Tidied up source code
+  - Core needs less RAM
+  - Lots of small changes

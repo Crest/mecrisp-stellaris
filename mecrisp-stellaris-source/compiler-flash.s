@@ -582,34 +582,31 @@ skipstring: @ Überspringt einen String, dessen Adresse in r0 liegt.
   Wortbirne Flag_visible, "find"
 find: @ ( str -- Code-Adresse Flags )
 @ -----------------------------------------------------------------------------
-  push {r0, r1, r2, r3, r4, r5, lr}
+  push {r0, r1, r2, r3, r4, lr}
         
   @ r0  Hangelpointer
   @ r1  Flags
   @ r2  Aktuellen Link
 
-  @ r3  Zieladresse
-  @ r4  Zielflags
+  @ tos Zieladresse
+  @ r3  Zielflags
 
-  @ r5  Adresse des zu suchenden Strings
+  @ r4  Adresse des zu suchenden Strings
 
-  popda r5 @ Zu suchenden String holen
+  mov r4, tos @ Zu suchenden String holen, Lücke auf dem Datenstack lassen
 
   bl dictionarystart
   popda r0
 
-  movs r3, #0   @ Noch keinen Treffer
-  movs r4, #0   @ Und noch keine Trefferflags
+  movs tos, #0  @ Noch keinen Treffer
+  movs r3, #0   @ Und noch keine Trefferflags
 
 
 1:   @ Ist an der Stelle der Flags und der Namenslänge $FFFF ? Dann ist der Faden abgelaufen.
      @ Prüfe hier die Namenslänge als Kriterium
-     adds r0, #8 @ 4 Bytes Flags 4 Bytes Link
-     ldrb r1, [r0] @ Hole Namenslänge
+     ldrb r1, [r0, #6] @ Hole Namenslänge, Stelle plus 2 Bytes Flags 4 Bytes Link
      cmp r1, #0xFF
      beq 3f        @ Fadenende erreicht
-     subs r0, #8
-
 
         @ Adresse in r0 zeigt auf:
         @   --> Flagfeld
@@ -617,16 +614,16 @@ find: @ ( str -- Code-Adresse Flags )
         adds r0, #2
 
         movw r2, #0xFFFF
-        cmp r1, r2       @ Flag_invisible ? Überspringen !
+        cmp r1, r2      @ Flag_invisible ? Überspringen !
           @   --> Link
           ldr r2, [r0]  @ Aktuellen Link lesen, verändert Flags nicht !
         beq 2f        
 
-        adds r0, #4 @ Link überspringen
+        adds r0, #4 @ Flags und Link überspringen
 
           @ --> Name
           pushda r0
-          pushda r5
+          pushda r4
           bl compare
 
           cmp tos, #-1 @ Flag vom Vergleich prüfen
@@ -637,13 +634,13 @@ find: @ ( str -- Code-Adresse Flags )
             @ String überlesen und Pointer gerade machen
             bl skipstring
 
-            mov r3, r0 @ Codestartadresse
-            mov r4, r1 @ Flags
+            mov tos, r0 @ Codestartadresse
+            mov r3, r1 @ Flags
             @ writeln "Gefunden"
             @ Prüfe, ob ich mich im Flash oder im Ram befinde.
             @ r0 wird jetzt nicht mehr gebraucht:
             ldr r0, =Backlinkgrenze
-            cmp r3, r0
+            cmp tos, r0
             bhs 3f @ Im Ram beim ersten Treffer ausspringen. 
             @ Im Flash wird weitergesucht, ob es noch eine neuere Definition mit dem Namen gibt.
 
@@ -657,10 +654,9 @@ find: @ ( str -- Code-Adresse Flags )
         mov r0, r2
         b 1b      
 
-
 3:@ Durchgehangelt. Habe ich etwas gefunden ?
   @ Zieladresse gesetzt, also nicht Null bedeutet: Etwas gefunden !
-  pushda r3  @ Zieladresse    oder 0, falls nichts gefunden
-  pushda r4  @ Zielflags      oder 0  --> @ ( 0 0 - Nicht gefunden )
+             @ Zieladresse    oder 0, falls nichts gefunden
+  pushda r3  @ Zielflags      oder 0  --> @ ( 0 0 - Nicht gefunden )
 
-  pop {r0, r1, r2, r3, r4, r5, pc}
+  pop {r0, r1, r2, r3, r4, pc}

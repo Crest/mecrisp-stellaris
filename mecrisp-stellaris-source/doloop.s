@@ -18,8 +18,8 @@
 
 @ Die zählenden Schleifen
  
-rloopindex .req r10
-rlooplimit .req r11
+rloopindex .req r4
+rlooplimit .req r5
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_inline, "k" @ Kopiert den drittobersten Schleifenindex
@@ -146,21 +146,9 @@ unloop:
 
   pushda r0
   bl inlinekomma  
+  bl r_branch_jvc @ +loop entscheidet mit dem arithmetrischen Überlauf
 
-  bl r_branch_jvc @ Oder ein anderer Sprung ?
-
-  bl spruenge_einpflegen @ Die gleiche Routine ist in Endcase am Werk
-
-  ldr r0, =leavepointer
-  popda r1
-  str r1, [r0]           @ Zurückholen für die nächste Schleifenebene
-
-
-  ldr r0, =unloop
-  pushda r0
-  bl inlinekomma
-  pop {pc}
-
+  b.n loop_intern
 
 struktur_plusloop:
   adds rloopindex, #0x80000000  @ Index + $8000
@@ -187,15 +175,14 @@ struktur_plusloop:
 
   pushda r0
   bl inlinekomma  
-
   bl r_branch_jne
 
+loop_intern:
   bl spruenge_einpflegen @ Die gleiche Routine ist in Endcase am Werk
 
   ldr r0, =leavepointer
   popda r1
   str r1, [r0]           @ Zurückholen für die nächste Schleifenebene
-
 
   ldr r0, =unloop
   pushda r0
@@ -217,14 +204,13 @@ struktur_loop:
   pushda r0
   bl inlinekomma
 
-
   ldr r0, =leavepointer
   ldr r1, [r0]
   pushda r1     @ Alten Leavepointer sichern
   pushdaconst 0
   str psp, [r0] @ Aktuelle Position im Stack sichern
 
-
+do_intern:
   bl branch_r    @ Schleifen-Rücksprung vorbereiten
   pushdaconst 3  @ Strukturerkennung
   pop {pc}
@@ -249,23 +235,20 @@ struktur_do:
   pushda r0
   bl inlinekomma
 
-
   ldr r0, =leavepointer
-  ldr r1, [r0]  @ here 2 allot
+  ldr r1, [r0]
   pushda r1     @ Alten Leavepointer sichern
 
   @ An diese Stelle nun die Vorwärtssprunglücke einfügen:
-  bl branch_v
+  bl branch_v      @ here 2 allot
   orrs tos, #1   @ Markierung anbringen, dass ich mir einen bedingten Sprung wünsche
 
   pushdaconst 1
   ldr r0, =leavepointer
   str psp, [r0] @ Aktuelle Position im Stack sichern
 
-  
-  bl branch_r    @ Schleifen-Rücksprung vorbereiten
-  pushdaconst 3  @ Strukturerkennung
-  pop {pc}
+  b.n do_intern
+
 
 struktur_qdo:
   push {rloopindex, rlooplimit}

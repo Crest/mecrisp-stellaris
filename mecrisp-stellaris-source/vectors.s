@@ -1,171 +1,88 @@
+@
+@    Mecrisp-Stellaris - A native code Forth implementation for ARM-Cortex M microcontrollers
+@    Copyright (C) 2013  Matthias Koch
+@
+@    This program is free software: you can redistribute it and/or modify
+@    it under the terms of the GNU General Public License as published by
+@    the Free Software Foundation, either version 3 of the License, or
+@    (at your option) any later version.
+@
+@    This program is distributed in the hope that it will be useful,
+@    but WITHOUT ANY WARRANTY; without even the implied warranty of
+@    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+@    GNU General Public License for more details.
+@
+@    You should have received a copy of the GNU General Public License
+@    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+@
 
 @ -----------------------------------------------------------------------------
 @ Interruptvektortabelle
 @ -----------------------------------------------------------------------------
 
-.word   returnstackanfang  @ Stack top address
-.word   Reset+1            @ Reset Vector  +1 wegen des Thumb-Einsprunges
+.word   returnstackanfang  @ 00: Stack top address
+.word   Reset+1            @ 01: Reset Vector  +1 wegen des Thumb-Einsprunges
 
 @ ... Interruptvektortabelle noch ziemlich leer ...
 
-.word nullhandler+1   @ The NMI handler
-.word nullhandler+1   @ The hard fault handler
-.word nullhandler+1   @ The MPU fault handler
-.word nullhandler+1   @ The bus fault handler
-.word nullhandler+1   @ The usage fault handler
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word nullhandler+1   @ SVCall handler
-.word nullhandler+1   @ Debug monitor handler
-.word 0               @ Reserved
-.word nullhandler+1   @ The PendSV handler
-.word irq_vektor_systick+1   @ The SysTick handler
+.word nullhandler+1   @ 02: The NMI handler
+.word nullhandler+1   @ 03: The hard fault handler
+.word nullhandler+1   @ 04: The MPU fault handler
+.word nullhandler+1   @ 05: The bus fault handler
+.word nullhandler+1   @ 06: The usage fault handler
+.word 0               @ 07: Reserved
+.word 0               @ 08: Reserved
+.word 0               @ 09: Reserved
+.word 0               @ 10: Reserved
+.word nullhandler+1   @ 11: SVCall handler
+.word nullhandler+1   @ 12: Debug monitor handler
+.word 0               @ 13: Reserved
+.word nullhandler+1   @ 14: The PendSV handler
+.word irq_vektor_systick+1   @ 15: The SysTick handler
 
-  /*
 
-.word nullhandler+1   @ GPIO Port A
-.word nullhandler+1   @ GPIO Port B
-.word nullhandler+1   @ GPIO Port C
-.word nullhandler+1   @ GPIO Port D
-.word nullhandler+1   @ GPIO Port E
-.word nullhandler+1   @ UART0 Rx and Tx
-.word nullhandler+1   @ UART1 Rx and Tx
-.word nullhandler+1   @ SSI0 Rx and Tx
-.word nullhandler+1   @ I2C0 Master and Slave
-.word nullhandler+1   @ PWM Fault
-.word nullhandler+1   @ PWM Generator 0
-.word nullhandler+1   @ PWM Generator 1
-.word nullhandler+1   @ PWM Generator 2
-.word nullhandler+1   @ Quadrature Encoder 0
-.word nullhandler+1   @ ADC Sequence 0
-.word nullhandler+1   @ ADC Sequence 1
-.word nullhandler+1   @ ADC Sequence 2
-.word nullhandler+1   @ ADC Sequence 3
-.word nullhandler+1   @ Watchdog timer
-.word nullhandler+1   @ Timer 0 subtimer A
-.word nullhandler+1   @ Timer 0 subtimer B
-.word nullhandler+1   @ Timer 1 subtimer A
-.word nullhandler+1   @ Timer 1 subtimer B
-.word nullhandler+1   @ Timer 2 subtimer A
-.word nullhandler+1   @ Timer 2 subtimer B
-.word nullhandler+1   @ Analog Comparator 0
-.word nullhandler+1   @ Analog Comparator 1
-.word nullhandler+1   @ Analog Comparator 2
-.word nullhandler+1   @ System Control (PLL, OSC, BO)
-.word nullhandler+1   @ FLASH Control
-.word nullhandler+1   @ GPIO Port F
-.word nullhandler+1   @ GPIO Port G
-.word nullhandler+1   @ GPIO Port H
-.word nullhandler+1   @ UART2 Rx and Tx
-.word nullhandler+1   @ SSI1 Rx and Tx
-.word nullhandler+1   @ Timer 3 subtimer A
-.word nullhandler+1   @ Timer 3 subtimer B
-.word nullhandler+1   @ I2C1 Master and Slave
-.word nullhandler+1   @ Quadrature Encoder 1
-.word nullhandler+1   @ CAN0
-.word nullhandler+1   @ CAN1
-.word nullhandler+1   @ CAN2
-.word nullhandler+1   @ Ethernet
-.word nullhandler+1   @ Hibernate
-.word nullhandler+1   @ USB0
-.word nullhandler+1   @ PWM Generator 3
-.word nullhandler+1   @ uDMA Software Transfer
-.word nullhandler+1   @ uDMA Error
-.word nullhandler+1   @ ADC1 Sequence 0
-.word nullhandler+1   @ ADC1 Sequence 1
-.word nullhandler+1   @ ADC1 Sequence 2
-.word nullhandler+1   @ ADC1 Sequence 3
-.word nullhandler+1   @ I2S0
-.word nullhandler+1   @ External Bus Interface 0
-.word nullhandler+1   @ GPIO Port J
-.word nullhandler+1   @ GPIO Port K
-.word nullhandler+1   @ GPIO Port L
-.word nullhandler+1   @ SSI2 Rx and Tx
-.word nullhandler+1   @ SSI3 Rx and Tx
-.word nullhandler+1   @ UART3 Rx and Tx
-.word nullhandler+1   @ UART4 Rx and Tx
-.word nullhandler+1   @ UART5 Rx and Tx
-.word nullhandler+1   @ UART6 Rx and Tx
-.word nullhandler+1   @ UART7 Rx and Tx
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word nullhandler+1   @ I2C2 Master and Slave
-.word nullhandler+1   @ I2C3 Master and Slave
-.word nullhandler+1   @ Timer 4 subtimer A
-.word nullhandler+1   @ Timer 4 subtimer B
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word 0               @ Reserved
-.word nullhandler+1   @ Timer 5 subtimer A
-.word nullhandler+1   @ Timer 5 subtimer B
-.word nullhandler+1   @ Wide Timer 0 subtimer A
-.word nullhandler+1   @ Wide Timer 0 subtimer B
-.word nullhandler+1   @ Wide Timer 1 subtimer A
-.word nullhandler+1   @ Wide Timer 1 subtimer B
-.word nullhandler+1   @ Wide Timer 2 subtimer A
-.word nullhandler+1   @ Wide Timer 2 subtimer B
-.word nullhandler+1   @ Wide Timer 3 subtimer A
-.word nullhandler+1   @ Wide Timer 3 subtimer B
-.word nullhandler+1   @ Wide Timer 4 subtimer A
-.word nullhandler+1   @ Wide Timer 4 subtimer B
-.word nullhandler+1   @ Wide Timer 5 subtimer A
-.word nullhandler+1   @ Wide Timer 5 subtimer B
-.word nullhandler+1   @ FPU
-.word nullhandler+1   @ PECI 0
-.word nullhandler+1   @ LPC 0
-.word nullhandler+1   @ I2C4 Master and Slave
-.word nullhandler+1   @ I2C5 Master and Slave
-.word nullhandler+1   @ GPIO Port M
-.word nullhandler+1   @ GPIO Port N
-.word nullhandler+1   @ Quadrature Encoder 2
-.word nullhandler+1   @ Fan 0
-.word 0               @ Reserved
-.word nullhandler+1   @ GPIO Port P (Summary or P0)
-.word nullhandler+1   @ GPIO Port P1
-.word nullhandler+1   @ GPIO Port P2
-.word nullhandler+1   @ GPIO Port P3
-.word nullhandler+1   @ GPIO Port P4
-.word nullhandler+1   @ GPIO Port P5
-.word nullhandler+1   @ GPIO Port P6
-.word nullhandler+1   @ GPIO Port P7
-.word nullhandler+1   @ GPIO Port Q (Summary or Q0)
-.word nullhandler+1   @ GPIO Port Q1
-.word nullhandler+1   @ GPIO Port Q2
-.word nullhandler+1   @ GPIO Port Q3
-.word nullhandler+1   @ GPIO Port Q4
-.word nullhandler+1   @ GPIO Port Q5
-.word nullhandler+1   @ GPIO Port Q6
-.word nullhandler+1   @ GPIO Port Q7
-.word nullhandler+1   @ GPIO Port R
-.word nullhandler+1   @ GPIO Port S
-.word nullhandler+1   @ PWM 1 Generator 0
-.word nullhandler+1   @ PWM 1 Generator 1
-.word nullhandler+1   @ PWM 1 Generator 2
-.word nullhandler+1   @ PWM 1 Generator 3
-.word nullhandler+1   @ PWM 1 Fault
+.word irq_vektor_porta+1   @ 16: GPIO Port A
+.word irq_vektor_portb+1   @ 17: GPIO Port B
+.word irq_vektor_portc+1   @ 18: GPIO Port C
+.word irq_vektor_portd+1   @ 19: GPIO Port D
+.word irq_vektor_porte+1   @ 20: GPIO Port E
+.word nullhandler+1   @ 21: UART0 Rx and Tx
+.word nullhandler+1   @ 22: UART1 Rx and Tx
+.word nullhandler+1   @ 23: SSI0 Rx and Tx
+.word nullhandler+1   @ 24: I2C0 Master and Slave
 
-  */
+.word 0  @ 25: Reserved
+.word 0  @ 26: Reserved
+.word 0  @ 27: Reserved
+.word 0  @ 28: Reserved
+.word 0  @ 29: Reserved
+
+.word nullhandler+1   @ 30: ADC Sequence 0
+.word nullhandler+1   @ 31: ADC Sequence 1
+.word nullhandler+1   @ 32: ADC Sequence 2
+.word nullhandler+1   @ 33: ADC Sequence 3
+
+.word nullhandler+1   @ 34: Watchdog timers 0 and 1
+
+.word irq_vektor_timer0a+1   @ 35: Timer 0 subtimer A
+.word irq_vektor_timer0b+1   @ 36: Timer 0 subtimer B
+.word irq_vektor_timer1a+1   @ 37: Timer 1 subtimer A
+.word irq_vektor_timer1b+1   @ 38: Timer 1 subtimer B
+.word irq_vektor_timer2a+1   @ 39: Timer 2 subtimer A
+.word irq_vektor_timer2b+1   @ 40: Timer 2 subtimer B
+
+.word nullhandler+1   @ 41: Analog Comparator 0
+.word nullhandler+1   @ 42: Analog Comparator 1
+
+.word 0  @ 43: Reserved
+
+.word nullhandler+1   @ 44: System Control (PLL, OSC, BO)
+.word nullhandler+1   @ 45: FLASH Control
+
+.word irq_vektor_portf+1   @ 46: GPIO Port F
+
+@ ... Das geht noch viel weiter ! Erstmal jedoch eine Grundausstattung an Bord. Siehe Datenblatt Seite 102.
+
 
 @ -----------------------------------------------------------------------------
 nullhandler:
