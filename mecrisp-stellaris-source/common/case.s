@@ -56,14 +56,9 @@ struktur_qof: @ Will be inlined.
 
 of_inneneinsprung:
   cmp tos, #8                  @ Check for structure pattern: Give error message and quit if wrong.
-  .ifdef m0core
   beq 1f
-  b strukturen_passen_nicht
-1:
-  .else
-  bne strukturen_passen_nicht
-  .endif
-  drop
+  b.n strukturen_passen_nicht
+1:drop
 
   push {lr}
 
@@ -97,14 +92,9 @@ of_opcodiereinsprung:
   @ Generate opcodes
 
   cmp tos, #8                  @ Check for structure pattern: Give error message and quit if wrong.
-  .ifdef m0core
   beq 1f
-  b strukturen_passen_nicht
-1:
-  .else
-  bne strukturen_passen_nicht
-  .endif
-  drop
+  b.n strukturen_passen_nicht
+1:drop
 
   @ r0 contains constant for this case comparision.
 
@@ -156,14 +146,9 @@ struktur_of:
 strukturendof:
 @------------------------------------------------------------------------------
   cmp tos, #9
-  .ifdef m0core
   beq 1f
-  b strukturen_passen_nicht
-1:
-  .else
-  bne strukturen_passen_nicht
-  .endif
-  drop
+  b.n strukturen_passen_nicht
+1:drop
 
   push {lr}
   to_r @ #of auf Returnstack  Move #of to Returnstack and out of the way
@@ -182,14 +167,9 @@ strukturendof:
 strukturendcase:
 @------------------------------------------------------------------------------
   cmp tos, #8
-  .ifdef m0core
   beq 1f
-  b strukturen_passen_nicht
-1:
-  .else
-  bne strukturen_passen_nicht
-  .endif
-  drop
+  b.n strukturen_passen_nicht
+1:drop
 
   push {lr}
   pushdaconstw 0xcf40 @ Opcode for ldmia r7!, {r6}

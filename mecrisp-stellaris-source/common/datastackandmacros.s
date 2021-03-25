@@ -74,6 +74,10 @@ psp .req r7
   ldm psp!, {tos}
 .endm
 
+.macro nip
+  adds psp, #4 @ Move SP to eliminate next element.
+.endm
+
 .macro dup
   pushdatos
 .endm

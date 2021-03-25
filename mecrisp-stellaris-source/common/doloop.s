@@ -163,14 +163,9 @@ unloop:                           @ Remove loop structure from returnstack
   @ ( OldLeavePointer ... NumberofJumps Target 3 -- )
   @------------------------------------------------------------------------------
   cmp tos, #3 @ Structure matching
-  .ifdef m0core
   beq 1f
-  b strukturen_passen_nicht
-1:
-  .else
-  bne strukturen_passen_nicht
-  .endif
-  drop
+  b.n strukturen_passen_nicht
+1:drop
 
   push {lr} 
   pushdatos
@@ -217,14 +212,9 @@ struktur_plusloop:
   @ ( OldLeavePointer ... NumberofJumps Target 3 -- )
 @------------------------------------------------------------------------------
   cmp tos, #3 @ Structure matching
-  .ifdef m0core
   beq 1f
-  b strukturen_passen_nicht
-1:
-  .else
-  bne strukturen_passen_nicht
-  .endif
-  drop
+  b.n strukturen_passen_nicht
+1:drop
 
   push {lr} 
   pushdatos

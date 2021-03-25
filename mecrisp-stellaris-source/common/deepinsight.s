@@ -74,13 +74,31 @@ hexdot: @ ( u -- ) @ Funktioniert unabhängig vom restlichen Zahlensystem.
         pop     {r0, r1, pc}
   .endif
 
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "h.s"  @ Prints out data stack, uses unsigned hexadecimal snumbers. 
+hexdots: @ Malt den Stackinhalt, diesmal verschönert !
+@ -----------------------------------------------------------------------------
+        push {r0, r1, r2, r3, r4, lr}
+        ldr r4, =hexdot+1
+        b.n 1f
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "u.s"  @ Prints out data stack, uses unsigned numbers. 
+udots: @ Malt den Stackinhalt, diesmal verschönert !
+@ -----------------------------------------------------------------------------
+        push {r0, r1, r2, r3, r4, lr}
+        ldr r4, =udot+1
+        b.n 1f
+
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, ".s"  @ Prints out data stack, uses signed numbers. 
 dots: @ Malt den Stackinhalt, diesmal verschönert !
 @ -----------------------------------------------------------------------------
-        push {r0, r1, r2, r3, lr}
+        push {r0, r1, r2, r3, r4, lr}
+        ldr r4, =dot+1
 
-        @ Berechne den Stackfüllstand  Calculate number of elements on datastack
+1:      @ Berechne den Stackfüllstand  Calculate number of elements on datastack
         ldr r1, =datenstackanfang @ Anfang laden
         subs r1, psp @ und aktuellen Stackpointer abziehen
 
@@ -115,7 +133,7 @@ dots: @ Malt den Stackinhalt, diesmal verschönert !
 
         push {r1, r2}
         pushda r0
-        bl dot @ u. bewahrt die Register nicht.  Doesn't save registers !
+        blx r4 @ . bewahrt die Register nicht.  Doesn't save registers !
         pop {r1, r2}
 
         subs r2, #4
@@ -125,10 +143,10 @@ dots: @ Malt den Stackinhalt, diesmal verschönert !
 2:      @ TOS zeigen  Print TOS
         write " TOS: "
         pushda tos
-        bl dot
+        blx r4
 
         writeln " *>"
-        pop {r0, r1, r2, r3, pc}
+        pop {r0, r1, r2, r3, r4, pc}
 
 
 @ -----------------------------------------------------------------------------

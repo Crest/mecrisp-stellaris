@@ -142,109 +142,7 @@ setflags_ram:
   strh r1, [r0]
   pop {pc}
 
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "variable" @ ( n -- )
-@ -----------------------------------------------------------------------------
-  push {lr}
-  bl create
-
-  ldr r0, =Dictionarypointer
-  ldr r1, [r0]
-
-  ldr r2, =Backlinkgrenze
-  cmp r1, r2
-  bhs variable_ram @ Befinde mich im Ram. Schalte um !
-
-  @ -----------------------------------------------------------------------------
-  @ Variable Flash
-  
-  @ Variablenpointer erniedrigen und zurückschreiben
-  @ Stelle initialisieren
-  @ Code für diese Stelle schreiben
-
-  @ Decrement variable pointer and write back
-  @ Initialise allocated location
-  @ Write code into Flash for that location - it is ensured that catchflashpointers will 
-  @ initialise exactly that physical address again on next Reset. 
-  @ Order of instructions carefully choosen to not corrupt RAM management in any case.
-
-      @ Eine echte Flash-Variable entsteht so, dass Platz im Ram angefordert wird.
-      @ Prüfe hier, ob genug Ram da ist !? 
-      @ Maybe check in future if there is enough RAM left ?
-
-  @ Variablenpointer erniedrigen und zurückschreiben   Decrement variable pointer
-  ldr r0, =VariablenPointer
-  ldr r1, [r0]
-  subs r1, #4  @ Ram voll ?  Maybe insert a check for enough RAM left ?
-  str r1, [r0]
- 
-  @ Stelle Initialisieren:  Init allocated location
-  str tos, [r1]
-
-  @ Code schreiben:  Write code
-  pushda r1
-  bl literalkomma    @ Adresse im Ram immer mit movt --> 12 Bytes
-  pushdaconstw 0x4770 @ Opcode für bx lr --> 2 Bytes
-  bl hkomma
-
-  bl komma @ Initialisierungswert brennen  Write initialisation value for catchflashpointers
-
-  pushdaconst Flag_ramallot|1  @ Finally (!) set Flags for RAM usage.
-  bl setflags
-  bl smudge
-  pop {pc}
-
-
-  @ -----------------------------------------------------------------------------
-  @ Variable RAM
-variable_ram:
-  @ This is simple: Write code, write value, a classic Forth variable.
-
-  @ pushdatos
-  @ mov tos, pc
-  @ adds tos, #2
-  @ bx lr
-  @ Value for Variable
-
-@  pushdaconstw 0x3f04  @ subs    r7, #4
-@  bl hkomma
-@  pushdaconstw 0x603e  @ str     r6, [r7, #0]
-@  bl hkomma
-@  pushdaconstw 0x467e  @ mov     r6, pc
-@  bl hkomma
-@  pushdaconstw 0x3602  @ adds    r6, #2
-@  bl hkomma
-@  pushdaconstw 0x4770 @ Opcode für bx lr --> 2 Bytes
-@  bl hkomma
-
-  .ifdef m0core @ This is to align dictionary pointer to have variable locations that are always 4-even
-    bl here
-    movs r0, #2
-    ands tos, r0
-    drop
-    bne 1f
-      pushdaconstw 0x0036  @ nop = movs tos, tos
-      bl hkomma
-1:
-  .endif
-
-  pushdatos
-  ldr tos, =0x3f04603e @ subs r7, #4    str r6, [r7, #0]
-  bl reversekomma
-  pushdatos
-  ldr tos, =0x467e3602 @ mov r6, pc     adds r6, #2
-  bl reversekomma
-  pushdaconstw 0x4770  @ bx lr
-  bl hkomma
-
-  bl komma @ Variable initialisieren   Write initialisation value
-
-  bl setze_faltbarflag @ Variables always are 0-foldable as their address never changes.
-  bl smudge
-  pop {pc}
-
-
-  .ltorg @ Mal wieder Konstanten schreiben
+ .ltorg
 
 @ If your particular Flash controller doesn't support byte write access, 
 @ you can remove align, and c, without breaking anything.
@@ -660,6 +558,153 @@ create_ram:
 
 
 @ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "variable" @ ( n -- )
+@ -----------------------------------------------------------------------------
+  pushdaconst 1
+  b.n nvariable
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "2variable" @ ( d -- )
+@ -----------------------------------------------------------------------------
+  pushdaconst 2
+  b.n nvariable
+
+@------------------------------------------------------------------------------
+  Wortbirne Flag_visible, "nvariable" @ ( Init-Values Length -- )
+nvariable: @ Creates an initialised variable of given length.
+@------------------------------------------------------------------------------
+  
+  push {lr}
+  bl create
+
+  ldr r0, =Dictionarypointer
+  ldr r1, [r0]
+
+  ldr r2, =Backlinkgrenze
+  cmp r1, r2
+  bhs variable_ram @ Befinde mich im Ram. Schalte um !
+
+  @ -----------------------------------------------------------------------------
+  @ Variable Flash
+  
+  @ Variablenpointer erniedrigen und zurückschreiben
+  @ Stelle initialisieren
+  @ Code für diese Stelle schreiben
+
+  @ Decrement variable pointer and write back
+  @ Initialise allocated location
+  @ Write code into Flash for that location - it is ensured that catchflashpointers will 
+  @ initialise exactly that physical address again on next Reset. 
+  @ Order of instructions carefully choosen to not corrupt RAM management in any case.
+
+      @ Eine echte Flash-Variable entsteht so, dass Platz im Ram angefordert wird.
+      @ Prüfe hier, ob genug Ram da ist !? 
+      @ Maybe check in future if there is enough RAM left ?
+
+  movs r0, #0x0F @ Maximum length for flash variables !
+  ands tos, r0   @ Limit is important to not break Flags for catchflashpointers.
+
+  @ Variablenpointer erniedrigen und zurückschreiben   Decrement variable pointer
+
+  lsls r2, tos, #2 @ Multiply number of elements with 4 to get byte count
+
+  ldr r0, =VariablenPointer
+  ldr r1, [r0]
+  subs r1, r2  @ Ram voll ?  Maybe insert a check for enough RAM left ?
+  str r1, [r0]
+ 
+  @ Code schreiben:  Write code
+  pushda r1
+  bl literalkomma    @ Adresse im Ram immer mit movt --> 12 Bytes
+  pushdaconstw 0x4770 @ Opcode für bx lr --> 2 Bytes
+  bl hkomma
+
+  @ Amount of elements to write is in TOS.
+  @ Write code and initialise elements.
+  @ r1 is target location in RAM.
+
+  popda r0   @ Fetch amount of cells
+  movs r2, r0 @ Save the value for generating flags for catchflashpointers later
+  cmp r0, #0 @ If nvariable is called with length zero... Maybe this could be useful sometimes.
+  beq 2f
+
+1:str tos, [r1] @ Initialize RAM location
+  adds r1, #4
+  bl komma      @ Put initialisation value for catchflashpointers in place.
+  subs r0, #1
+  bne 1b
+
+2:@ Finished.
+
+  pushdaconst Flag_ramallot  @ Finally (!) set Flags for RAM usage.
+  orrs tos, r2               @ Or together with desired amount of cells.
+  bl setflags
+  bl smudge
+  pop {pc}
+
+  @ -----------------------------------------------------------------------------
+  @ Variable RAM
+variable_ram:
+  @ This is simple: Write code, write value, a classic Forth variable.
+
+  @ pushdatos
+  @ mov tos, pc
+  @ adds tos, #2
+  @ bx lr
+  @ Value for Variable
+
+@  pushdaconstw 0x3f04  @ subs    r7, #4
+@  bl hkomma
+@  pushdaconstw 0x603e  @ str     r6, [r7, #0]
+@  bl hkomma
+@  pushdaconstw 0x467e  @ mov     r6, pc
+@  bl hkomma
+@  pushdaconstw 0x3602  @ adds    r6, #2
+@  bl hkomma
+@  pushdaconstw 0x4770 @ Opcode für bx lr --> 2 Bytes
+@  bl hkomma
+
+  .ifdef m0core @ This is to align dictionary pointer to have variable locations that are always 4-even
+    bl here
+    movs r0, #2
+    ands tos, r0
+    drop
+    bne 1f
+      pushdaconstw 0x0036  @ nop = movs tos, tos
+      bl hkomma
+1:
+  .endif
+
+  pushdatos
+  ldr tos, =0x3f04603e @ subs r7, #4    str r6, [r7, #0]
+  bl reversekomma
+  pushdatos
+  ldr tos, =0x467e3602 @ mov r6, pc     adds r6, #2
+  bl reversekomma
+  pushdaconstw 0x4770  @ bx lr
+  bl hkomma
+
+  @ Amount of elements to write is in TOS.
+
+  popda r0   @ Fetch amount of cells
+  cmp r0, #0 @ If nvariable is called with length zero... Maybe this could be useful sometimes.
+  beq 2f
+
+1:bl komma
+  subs r0, #1
+  bne 1b
+
+2:@ Finished.
+
+  bl setze_faltbarflag @ Variables always are 0-foldable as their address never changes.
+  bl smudge
+  pop {pc}
+
+
+  .ltorg @ Mal wieder Konstanten schreiben
+
+
+@ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "Dictionarystart"
 dictionarystart: @ ( -- Startadresse des aktuellen Dictionaryfadens )
                  @ Da dies je nach Ram oder Flash unterschiedlich ist...
@@ -690,6 +735,20 @@ dictionarystart: @ ( -- Startadresse des aktuellen Dictionaryfadens )
 @    movhs r2, r3                    @ Oberhalb der Backlinkgrenze bin ich im Ram, kann mit dem Fadenende beginnen.   In RAM:   Start with latest definition.
 @  pushda r2
 @  bx lr
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "skipstring"
+@ -----------------------------------------------------------------------------
+    @ String überlesen und Pointer gerade machen
+    ldrb r1, [tos] @ Länge des Strings holen      Fetch length
+    adds r1, #1   @ Plus 1 Byte für die Länge   One more for length byte
+
+    movs r2, #1  @ Wenn es ungerade ist, noch einen mehr:   Maybe one more for aligning.
+    ands r2, r1
+
+    adds r1, r2
+    adds tos, r1  
+    bx lr
 
 @ -----------------------------------------------------------------------------
 skipstring: @ Überspringt einen String, dessen Adresse in r0 liegt.  Skip string which address is in r0.

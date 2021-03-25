@@ -17,7 +17,7 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the eight release of Mecrisp-Stellaris,
+This is the ninth release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
 It runs out of the box on:
@@ -113,15 +113,13 @@ https://launchpad.net/gcc-arm-embedded/
 Differences to stable Mecrisp for MSP430 are:
 
 * Experimental code ! Be brave, but expect monsters around the corner.
+    Mecrisp-Stellaris will reach stable in spring 2014.
 
 * Fetch-Modify-Store operations like +! or bic! are not atomic.
 
 * Comfortable hardware support is done in Forth this time.
    You can contribute your favourite hardware handling routines 
    to be included in upcoming releases !
-
-* Mecrisp-Stellaris for now has no double-number support, if you wish for it,
-   feel free to ask me to implement it !
 
 * For design ideas, have a look into Mecrisp for MSP430, too !
 
@@ -146,7 +144,7 @@ two useful switches:
   "emulated16bitflashwrites" if your particular Flash controller
                              cannot write data in separate 16-Bit chunks.
 
-Core needs about 11 kb flash at the moment, but reserves 16 kb for upcoming
+Core needs about 14 kb flash at the moment, but reserves 16 kb for upcoming
 additions, and needs 1.5 kb RAM for stacks and buffers plus variables for 
 interrupt handlers plus RAM dictionary space. Bare minimum for ARM to get it 
 running will be around 16kb/2kb, but to have fun with it and leave space for 
@@ -230,6 +228,21 @@ Single-Jugglers:
         r>              ( -- x ) (R: x -- )
         r@              ( -- x ) (R: x -- x )
 
+Double-Jugglers:        They perform the same for double numbers.
+
+        2nip            ( x1 x2 x3 x4 -- x3 x4 )
+        2drop           ( x1 x2 -- )
+        2rot            ( x1 x2 x3 x4 x5 x6 -- x3 x4 x5 x6 x1 x2 )
+        2-rot           ( x1 x2 x3 x4 x5 x6 -- x5 x6 x1 x2 x3 x4 )
+        2swap           ( x1 x2 x3 x4 -- x3 x4 x1 x2 )
+        2tuck           ( x1 x2 x3 x4 -- x3 x4 x1 x2 x3 x4 )
+        2over           ( x1 x2 x3 x4 -- x1 x2 x3 x4 x1 x2 )
+        2dup            ( x1 x2 -- x1 x2 x1 x2 )
+
+        2>r             ( x1 x2 -- ) (R: -- x1 x2 )
+        2r>             ( -- x1 x2 ) (R: x1 x2 -- )
+        2r@             ( -- x1 x2 ) (R: x1 x2 -- x1 x2 )
+
 ;------------------------------------------------------------------------------
 ; Logic  (exactly ANS, some logical extensions)
 ;------------------------------------------------------------------------------
@@ -273,9 +286,42 @@ Single-Jugglers:
         +               ( u1|n1 u2|n2 -- u3|n3 ) Addition
 
 ;------------------------------------------------------------------------------
+; Calculus involving double numbers  (exactly ANS, some logical extensions)
+;------------------------------------------------------------------------------
+
+        um*             ( u1 u2 -- ud )        32*32 = 64 Multiplication
+        ud*             ( ud1 ud2 -- ud3 )     64*64 = 64 Multiplication
+        udm*            ( ud1 ud2 -- ud3-Low ud4-High ) 64*64=128 Multiplication
+
+        um/mod          ( ud u1 -- u2 u3 )     ud / u1 = u3 remainder u2
+        ud/mod          ( ud1 ud2 -- ud3 ud4 ) 64/64 = 64 rem 64 Division
+                                               ud1 / ud2 = ud4 remainder ud3
+
+        m*              ( n1 n2 -- d )         n1 * n2 = d
+        m/mod           ( d  n1 -- n2 n3 )     d  / n1 = n3 remainder r2
+        d/mod           ( d1 d2 -- d3 d4 )     d1 / d2 = d4 remainder d3
+        */              ( n1 n2 n3 -- n4 )     n1 * n2 / n3 = n4
+        u*/             ( u1 u2 u3 -- u4 )     u1 * u2 / u3 = u4
+        */mod           ( n1 n2 n3 -- n4 n5 )  n1 * n2 / n3 = n5 remainder n4
+        u*/mod          ( u1 u2 u3 -- u4 u5 )  u1 * u2 / u3 = u5 remainder u4
+
+        d2*             ( d1 -- d2 ) Arithmetric  left-shift
+        d2/             ( d1 -- d2 ) Arithmetric right-shift
+        dshl            ( ud1 -- ud2 ) Logical left-shift, same as d2*
+        dshr            ( ud1 -- ud2 ) Logical right-shift
+
+        dabs            ( d -- ud ) Absolute value
+        ?dnegate        ( d1 n -- d2 ) Negate d1 if n is negative
+        dnegate         ( d1 -- d2 ) Negate
+        d-              ( ud1|d1 ud2|d2 -- ud3|d3 ) Subtraction
+        d+              ( ud1|d1 ud2|d2 -- ud3|d3 ) Addition
+        s>d             ( n -- d ) Makes a signed single number double length
+
+;------------------------------------------------------------------------------
 ; Comparisions  (exactly ANS, some logical extensions)
 ;------------------------------------------------------------------------------
 
+Single-Comparisions:
         u<=             ( u1 u2 -- flag )  Unsigned comparisions
         u>=             ( u1 u2 -- flag )
         u>              ( u1 u2 -- flag )
@@ -289,6 +335,41 @@ Single-Jugglers:
         0=              ( x -- flag )
         <>              ( x1 x2 -- flag )
         =               ( x1 x2 -- flag )
+
+Double-Comparisions:            They perform the same for double numbers.
+        du>             ( ud1 ud2 -- flag )
+        du<             ( ud1 ud2 -- flag )
+        d>              ( d1 d2 -- flag )
+        d<              ( d1 d2 -- flag )
+        d0<             ( d -- flag )
+        d0=             ( d -- flag )
+        d<>             ( d1 d2 -- flag )
+        d=              ( d1 d2 -- flag )
+
+;------------------------------------------------------------------------------
+; Tools (not only) for s31.32 fixed point numbers  (speciality!)
+;------------------------------------------------------------------------------
+
+Fixpoint numbers are stored ( n-comma n-whole ) and can be handled
+like signed double numbers.
+
+        f/              ( df1 df2 -- df3 ) Division of two fixpoint numbers
+        f*              ( df1 df2 -- df3 ) Multiplication
+
+        hold<           ( char -- )
+                        Adds character to pictured number output buffer
+                        from behind.
+        f#S             ( n-comma1 -- n-comma2 )
+                        Adds 32 comma-digits to number output
+        f#              ( n-comma1 -- n-comma2 )
+                        Adds one comma-digit to number output
+        f.              ( df -- )
+                        Prints a fixpoint number
+
+        number          ( Counted-String-Address -- 0 )
+                          cstr-addr              -- n 1 )
+                                                 -- n-low n-high 2 )
+                        Tries to convert a string to a number.
 
 ;------------------------------------------------------------------------------
 ; Number base  (exactly ANS)
@@ -323,17 +404,24 @@ Single-Jugglers:
         hbis!           ( mask a-addr -- ) Set BIts in halfword-location
         bis!            ( mask a-addr -- ) Set BIts in word-location
 
+        2constant name  ( ud|d -- ) Makes a double constant.
         constant  name  ( u|n -- )  Makes a single constant.
+        2variable name  ( ud|d -- ) Makes an initialized double variable
         variable  name  ( n|n -- )  Makes an initialized single variable
+        nvariable name  ( n1*u|n n1 -- ) Makes an initialized variable with
+                                         specified size of n1 words
+                                         Maximum is 15 words
 
+        2@              ( a-addr -- ud|d ) Fetches double number from memory
+        2!              ( ud|d a-addr -- ) Stores double number in memory
 
         @               ( a-addr -- u|n ) Fetches single number from memory
         !               ( u|n a-addr -- ) Stores single number in memory
         +!              ( u|n a-addr -- ) Add to memory location
 
         h@              ( c-addr -- char ) Fetches halfword from memory
-        h+!             ( u|n a-addr -- ) Add to halfword memory location
         h!              ( char c-addr ) Stores halfword in memory
+        h+!             ( u|n a-addr -- ) Add to halfword memory location
 
         c@              ( c-addr -- char ) Fetches byte from memory
         c!              ( char c-addr ) Stores byte in memory
@@ -346,6 +434,9 @@ Single-Jugglers:
 String routines:
         compare         ( cstr-addr-1 cstr-addr-2 -- flag )
                         Compares two counted strings
+
+        skipstring      ( cstr-addr -- a-addr )
+                        Increases the pointer to the aligned end of the string.
 
         type            ( cstr-addr -- )
                         Prints a counted string.
@@ -365,10 +456,6 @@ String routines:
 Pictured numerical output:
         .digit          ( u -- char ) Converts a digit to a char
         digit           ( char -- u ) Converts a char to a digit
-
-        number          ( Counted-String-Address -- 0 )
-                          cstr-addr              -- n 1 )
-                        Tries to convert a string to a number.
 
         [char] *        Compiles code of following char
                         ( -- char ) when executed
@@ -393,7 +480,9 @@ Pictured numerical output:
 
 Deep insights:
         words           ( -- ) Prints list of defined words.
-        .s              ( many -- many ) Prints stack contents
+        .s              ( many -- many ) Prints stack contents, signed
+        u.s             ( many -- many ) Prints stack contents, unsigned
+        h.s             ( many -- many ) Prints stack contents, unsigned, hex
         dump            ( addr -- ) Dumps a bit of memory
         hex.            ( u -- ) Prints 32 bit unsigned in hex base,
                                  needs emit only.
@@ -477,6 +566,8 @@ Deep insights:
         1-foldable      ( -- ) Current word becomes foldable with one constants
         2-foldable      ( -- ) Current word becomes foldable with two constants
         3-foldable      ( -- ) Current word becomes foldable with 3   constants
+            ...
+        7-foldable      ( -- ) Current word becomes foldable with 7   constants
 
 ;------------------------------------------------------------------------------
 ; Compiler essentials  (subtle differences to ANS)

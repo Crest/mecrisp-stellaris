@@ -83,3 +83,9 @@
 28.11.2013, Matthias Koch, Mecrisp-Stellaris 0.8.1:
 
   - New target: STM32F100 on STM VL Discovery board
+
+18.12.2013, Matthias Koch, Mecrisp-Stellaris 0.9:
+
+  - Double numbers and s31.32 fixpoint calculations
+  - Sine/Cosine Cordic algorithm
+  - Two channel 1 Msps oscilloscope for LM4F120

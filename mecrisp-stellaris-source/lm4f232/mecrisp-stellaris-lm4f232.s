@@ -78,6 +78,7 @@
 @ Alle anderen Teile von Mecrisp-Stellaris
 @ All other parts of Mecrisp-Stellaris core
 @ -----------------------------------------------------------------------------
+  .include "../common/double.s"
   .include "../common/stackjugglers.s" 
   .include "../common/logic.s"
   .include "../common/comparisions.s"
@@ -140,7 +141,7 @@ Reset_Inneneinsprung:
    @ Catch the pointers for Flash dictionary
    .include "../common/catchflashpointers.s"
 
-   writeln "Mecrisp-Stellaris 0.8 for LM4F232 by Matthias Koch"
+   writeln "Mecrisp-Stellaris 0.9 for LM4F232 by Matthias Koch"
 
    @ Genauso wie in quit. Hier nochmal, damit quit nicht nach dem Init-Einsprung nochmal tätig wird.
    @ Exactly like the initialisations in quit. Here again because quit should not be executed after running "init".

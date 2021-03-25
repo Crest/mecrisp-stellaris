@@ -53,8 +53,6 @@
 \  Try to find address as code start in Dictionary 
 \ --------------------------------------------------
 
-: skipstring ( address -- address ) dup c@ + 1+ even ; \ Move to core !
-
 : disasm-string ( -- ) \ Takes care of an inline string
   disasm-$ @ dup type skipstring disasm-$ !
 ;
@@ -81,9 +79,9 @@
 \  Beautiful output
 \ -------------------
 
-: u.4 <# # # # # #> type ;
-: u.8 <# # # # # # # # # #> type ;
-: u.ns <# #s #> type ;
+: u.4  0 <# # # # # #> type ;
+: u.8  0 <# # # # # # # # # #> type ;
+: u.ns 0 <# #s #> type ;
 : const. ."  #" u.ns ;
 : addr. u.8 ;
 
@@ -335,6 +333,8 @@ drop \ Forget opcode
 \ ----------
 \  Examples
 \ ----------
+
+compiletoram
 
 see +
 see dup

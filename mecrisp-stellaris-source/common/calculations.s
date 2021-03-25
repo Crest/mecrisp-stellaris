@@ -221,11 +221,12 @@ divmod_plus_plus:
   .endif
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "*" @ ( u1|n1 u2|n2 -- u3|n3 )
+  Wortbirne Flag_inline|Flag_opcodierbar_Rechenlogik, "*" @ ( u1|n1 u2|n2 -- u3|n3 )
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}     @ Get u1|n1 into a register.
-  muls tos, w, tos   @ Multiply!
-  bx lr 
+  muls tos, w       @ Multiply!
+  bx lr
+  muls tos, r0      @ Opcode for use with literal in register
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "2*" @ ( n -- n*2 )

@@ -84,15 +84,10 @@ digit_base_r3:  @ Erwartet Base in r3  Base has to be in r3 if you enter here.
   mvns tos, tos @ True-Flag bereitlegen
   bx lr
 
-
-@------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "number" @ Number-Input.
-  @ ( String -- 0 )    Not recognized
-  @ ( String -- n 1 )  Single number
-  @ ( String -- d 2 )  Double number or fixpoint s15.16
-
-number: @ Tries to convert a string in one of the supported number formats.
-@------------------------------------------------------------------------------
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "number" @ ( Addr -- n 1 | 0 ) Versucht den String in eine Zahl zu verwandeln.
+number: @ Tries to convert a string into a number.
+@ -----------------------------------------------------------------------------
 
 /*
     ; Sind noch Zeichen da ? Sonst fertig.
@@ -103,31 +98,17 @@ number: @ Tries to convert a string in one of the supported number formats.
     ; Wiederholen.
 */
 
-  @ r0: Pointer
-  @ r1: Characters left
-  @ r2: Character or helper
-  @ r3: Base
-  @ r4: Result-Low
-  @ r5: Result-High
+  push {r0, r1, r2, r3, r4, lr}
 
-  push {r0, r1, r2, r3, r4, r5, lr}
-
-  movs r0, tos  @ Hole die Stringadresse      Fetch string address
+  movs r0, tos   @ Hole die Stringadresse      Fetch string address
   ldrb r1, [r0] @ Hole die Länge des Strings  Fetch length of string
 
-  movs tos, #1  @ Single length result
+  movs tos, #0  @ Am Anfang noch keine Resultate  No results yet
 
-  movs r2, #1   @ Positive Sign
-  push {r2}
+  movs r2, #1  @ Positiv oder Negativ ? Positive sign.
 
   ldr r3, =base
   ldr r3, [r3]
-
-  movs r4, #0   @ Clear result low
-  movs r5, #0   @              high
-
-  @ ( Single R: Positive )
-
 
 1: @ Sind noch Zeichen da ?  Any characters left ?
   cmp r1, #0
@@ -136,139 +117,87 @@ number: @ Tries to convert a string in one of the supported number formats.
   @ Hole ein Zeichen:  Fetch a character
   adds r0, #1 @ Pointer weiterrücken
   subs r1, #1 @ Länge um eins verringern
-  ldrb r2, [r0] @ Zeichen holen.
+  ldrb r4, [r0] @ Zeichen holen.
 
+
+  .ifdef m0core
   @ Vorzeichen und Basisvorsilben:  Sign and base prefixes:
-  cmp r2, #45   @ Minus ?
+  cmp r4, #45   @ Minus ?
   bne 2f
-    add sp, #4   @ rdrop
     movs r2, #0
-    mvns r2, r2   @ -1
-    push {r2}
+    mvns r2, r2 @ -1
     b 1b
 
-2:cmp r2, #35   @ # ?
+2:cmp r4, #35   @ # ?
   bne 2f
     movs r3, #10 @ Umschalten auf Dezimal
     b 1b
 
-2:cmp r2, #36   @ $ ?
+2:cmp r4, #36   @ $ ?
   bne 2f
     movs r3, #16 @ Umschalten auf Hexadezimal
     b 1b
 
-2:cmp r2, #37   @ % ?
+2:cmp r4, #37   @ % ?
   bne 2f
     movs r3, #2  @ Umschalten auf Binär
     b 1b
 
-2:cmp r2, #46   @ . ?
-  bne 2f
-    movs tos, #2   @ Double length result !
-    b 1b
+2:
 
-2:cmp r2, #44  @ , ?
-  beq.n number_nachkommastellen
+  .else
+  @ Vorzeichen und Basisvorsilben:  Sign and base prefixes:
+  cmp r4, #45   @ Minus ?
+  itt eq
+  moveq r2, #-1
+  beq 1b
+
+  cmp r4, #35   @ # ?
+  itt eq
+  moveq r3, #10 @ Umschalten auf Dezimal
+  beq 1b
+
+  cmp r4, #36   @ $ ?
+  itt eq
+  moveq r3, #16 @ Umschalten auf Hexadezimal
+  beq 1b
+
+  cmp r4, #37   @ % ?
+  itt eq
+  moveq r3, #2  @ Umschalten auf Binär
+  beq 1b
+  .endif
 
 
   @ Wandele das Zeichen  Convert character
-  pushda r2
+  pushda r4
   bl digit_base_r3
   cmp tos, #0 @ Bei false mochte digit das Zeichen nicht.  Error ?
   drop        @ Flag runterwerfen  Drop the Flag from digit
     beq 5f      @ Aussprung mit Fehler.
 
   @ Zeichen wurde gemocht.  Character has been successfully converted to a digit.
+  popda r4 @ Ziffer holen
 
-  @ Multiply old result with base:
-  pushda r4 @ Low
-  pushda r5 @ High
-  pushda r3 @ Base-Low
-  pushdaconst 0 @ Base-High
-
-  push {r0, r1, r2, r3}
-    bl ud_short_star
-  pop {r0, r1, r2, r3}
-
-  popda r5 @ High
-  popda r4 @ Low
-  
-  movs r2, #0 @ For addition with Carry
-  adds r4, tos
-  adcs r5, r2
-  drop
+  .ifdef m0core
+  muls tos, r3
+  adds tos, r4
+  .else
+  mla tos, tos, r3, r4 @ (Zahl * Basis) + Ziffer  (Number * Base) + Digit
+  .endif
 
   b 1b
   
 
 4:@ String ist leer und wurde korrekt umgewandelt.  String is empty. Almost done...
   @ Vorzeichen beachten:  Take care of sign.
-  pop {r2} @ Fetch back sign
-  cmp r2, #0
-  bpl 3f
-
-    @ dnegate in Register:
-    movs r2, #0
-    mvns r4, r4
-    mvns r5, r5
-    adds r4, #1
-    adcs r5, r2
-
-3:movs r3, tos  @ Length of result:
-  movs tos, r4  @ Low or single result
-  cmp r3, #1
-  beq 3f
-    pushda r5   @ High result
-3:pushda r3     @ Length on Stack
-
-  pop {r0, r1, r2, r3, r4, r5, pc}
-
+  muls tos, tos, r2 @ Mit 1 oder -1 malnehmen.
+  pushdaconst 1     @ True, 1 Stackelement von der Zahl belegt  Success ! String converted to one stack element.
+  pop {r0, r1, r2, r3, r4, pc}
 
 5: @ Digit mochte das Zeichen nicht. Return without success.
-  add sp, #4   @ Forget sign
-  movs tos, #0  @ No result
-  pop {r0, r1, r2, r3, r4, r5, pc}
-
-
-
-number_nachkommastellen: @ Digits after the decimal point.
-  movs r5, r4   @ Low part is "high" part before comma now.
-  movs r4, #0   @ Clear low part. To be filled with digits after comma.
-  movs tos, #2  @ Double length result !
-
-1: @ Sind noch Zeichen da ?  Any characters left ?
-  cmp r1, #0
-  beq 4b @ String ist leer, bin fertig !
-
-  @ Fetch a character from end of string:
-  ldrb r2, [r0, r1] @ Zeichen holen.
-  subs r1, #1 @ Länge um eins verringern
-  
-  cmp r2, #46   @ . ?
-  beq 1b        @ Accept more dots for clarity, already double result.
-
-
- @ Wandele das Zeichen  Convert character
-  pushda r2
-  bl digit_base_r3
-  cmp tos, #0 @ Bei false mochte digit das Zeichen nicht.  Error ?
-  drop        @ Flag runterwerfen  Drop the Flag from digit
-    beq 5b      @ Aussprung mit Fehler.
-
-  @ Zeichen wurde gemocht.  Character has been successfully converted to a digit.
-
-  subs psp, #4
-  str r4, [psp] @ Low-Old
-  pushda r3 @ Base
-
-  @ ( Old New-Digit Base )
-  push {r0, r1, r2, r3}
-  bl um_slash_mod @ ( Remainder New.. )
-  pop {r0, r1, r2, r3}
-  popda r4
-  drop
-
-  b 1b
+  movs tos, #0
+  pop {r0, r1, r2, r3, r4, pc}
 
 
 @ -----------------------------------------------------------------------------
@@ -364,22 +293,6 @@ hold: @ ( Zeichen -- )  Insert one character at the beginning of number buffer
 
 3:bx lr
 
-@------------------------------------------------------------------------------
- Wortbirne Flag_visible, "hold<"
-zahlanhaengen: @ ( Character -- ) Insert one character at the end of number buffer
-@------------------------------------------------------------------------------
-  popda r3 @ Das einzufügende Zeichen
-
-  ldr r0, =Zahlenpuffer
-  ldrb r1, [r0] @ Länge holen  
-
-  cmp r1, #Zahlenpufferlaenge  @ Ist der Puffer voll ? Number buffer full ?
-  bhs 3f                       @ Keine weiteren Zeichen mehr annehmen.  
-
-    adds r1, #1 @ Ein Zeichen mehr
-    strb r1, [r0] @ Neue Länge schreiben
-    strb r3, [r0, r1] @ Neues Zeichen am Ende anhängen
-3:bx lr
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "sign"
@@ -402,55 +315,19 @@ zifferstringende:  @ Schließt einen neuen Ziffernstring ab und gibt seine Adres
                    @ Benutzt dafür einfach den Zahlenpuffer.
                    @ Finishes a number string and gives back its address.
 @------------------------------------------------------------------------------
-  adds psp, #4
   ldr tos, =Zahlenpuffer @ Rest überschreiben, einfach in TOS legen.
   bx lr
 
-
-@------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "f#S"
-falleziffern: @ ( u -- u=0 )
-      @ Inserts all digits, at least one, into number buffer.
-@------------------------------------------------------------------------------
-  push {r4, lr}
-  movs r4, #32
-  
-1:bl fziffer
-  subs r4, #1
-  bne 1b
-
-  pop {r4, pc}
-
-@------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "f#"
-fziffer: @ ( u -- u )
-      @ Insert one more digit into number buffer
-@------------------------------------------------------------------------------
-  @ Handles parts after decimal point
-  @ Idea: Multiply with base, next digit will be shifted into high-part of multiplication result.
-  push {lr}
-    pushdatos
-    ldr tos, =base
-    ldr tos, [tos] @ Base
-    bl um_star     @ ( After-Decimal-Point Base -- Low High )
-    bl digitausgeben @ ( Low=Still-after-decimal-point Character )
-    bl zahlanhaengen @ Add character to number buffer
-  pop {pc}
-
 @------------------------------------------------------------------------------
   Wortbirne Flag_visible, "#S"
-alleziffern: @ ( d-Zahl -- d-Zahl=0 )      
+alleziffern: @ ( Zahl -- Zahl=0 )      
       @ Fügt alle Ziffern, jedoch mindestens eine,
-      @ an den im Aufbau befindlichen String an.
+      @ an den im aufbau befindlichen String an.
       @ Inserts all digits, at least one, into number buffer.
 @------------------------------------------------------------------------------
   push {lr}
 1:bl ziffer
   cmp tos, #0
-  bne 1b
-
-  ldr r0, [psp]
-  cmp r0, #0
   bne 1b
   pop {pc}
 
@@ -465,26 +342,29 @@ ziffer: @ ( Zahl -- Zahl )
   @ Bekomme einen Rest, und einen Teil, den ich im nächsten Durchlauf
   @ behandeln muss. Der Rest ist die Ziffer.
   push {lr}
+
+@    ldr r0, =base
+@    ldr r0, [r0]
+@    pushda r0 @ Basis
     pushdatos
     ldr tos, =base
-    ldr tos, [tos] @ Base-Low
-    pushdaconst 0  @ Base-High
-    @ ( uL uH BaseL BaseH )
-    bl ud_slash_mod
-    @ ( RemainderL RemainderH uL uH )
-    bl dswap
-    @ ( uL uH RemainderL RemainderH )
-    drop
-    @ ( uL uH RemainderL )
+    ldr tos, [tos]
+
+    @ Müsste haben: (u Basis -- )
+    bl u_divmod @ ( u u -- u u ) Dividend Divisor -- Ergebnis Rest
+    swap
+    @ Erhalte zurück ( -- Ergebnis Rest )
+    @ Der Rest ist die Ziffer, die ich an dieser Stelle wünsche.
     bl digitausgeben
-    @ ( uL uH digit )
+    @ Habe nun das Zeichen auf dem Stack. ( -- Ergebnis Zeichen )
+    @ Füge das Zeichen in den String ein.
     bl hold
-    @ ( uL uH )
+    @ ( Ergebnis )
   pop {pc}
 
 
 @------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "<#" @ ( d-Zahl -- d-Zahl )
+  Wortbirne Flag_visible, "<#" @ ( Zahl -- Zahl )
 zifferstringanfang: @ Eröffnet einen neuen Ziffernstring.
                     @ Opens a number string
 @------------------------------------------------------------------------------
@@ -493,63 +373,6 @@ zifferstringanfang: @ Eröffnet einen neuen Ziffernstring.
   strb r1, [r0]
   bx lr  
 
-@------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "f."
-      @ ( Low High -- )
-      @ Prints a s31.32 number
-@------------------------------------------------------------------------------
-  push {lr}
-  @ ( Low High -- )
-  bl tuck @ ( Sign Low High )
-  bl dabs @ ( Sign uLow uHigh )
-
-  pushdaconst 0  @ ( Sign After-decimal-point=uL Before-decimal-point-low=uH Before-decimal-point-high=0 )
-  bl zifferstringanfang
-
-  bl alleziffern @ Processing of high-part finished. ( Sign uL 0 0 )
-  drop @ ( Sign uL 0 )
-
-  movs tos, #44 @ Add a comma to number buffer ( Sign uL 44 )
-  bl zahlanhaengen @ ( Sign uL )
-
-  bl falleziffern @ Processing of fractional parts ( Sign 0 )
-  drop
-  bl vorzeichen
-
-  pushdatos @ Will be removed later
-  pushdatos
-  b.n abschluss_zahlenausgabe
-
-@------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "ud." @ ( ud -- )
-uddot:  @ Prints an unsigned double number
-@------------------------------------------------------------------------------
-  @ In Forth: <# #S #>
-  push {lr}
-  bl zifferstringanfang
-  bl alleziffern
-  b.n abschluss_zahlenausgabe
-
-@------------------------------------------------------------------------------
-  Wortbirne Flag_visible, "d." @ ( d -- )
-ddot:   @ Prints a signed double number
-@------------------------------------------------------------------------------
-  push {lr}
-  bl tuck
-  bl dabs
-
-  bl zifferstringanfang
-  bl alleziffern @ ( Sign 0 0 )
-  bl rot
-  bl vorzeichen
-
-abschluss_zahlenausgabe:
-  bl zifferstringende
-  bl type
-  bl space
-  pop {pc}
-
-
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "u."
       @ ( Zahl -- )
@@ -557,8 +380,11 @@ abschluss_zahlenausgabe:
       @ Prints an unsigned single number
 @ -----------------------------------------------------------------------------
 udot:
-  pushdaconst 0 @ Convert to unsigned double
-  b.n uddot
+  push {lr}
+  @ In Forth: <# #S #>
+  bl zifferstringanfang
+  bl alleziffern
+  bl dot_inneneinsprung
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "." @ ( Zahl -- )
@@ -566,6 +392,28 @@ udot:
      @ Prints a signed single number
 @ -----------------------------------------------------------------------------
 dot:
-  pushdatos
-  movs tos, tos, asr #31    @ s>d - Turn MSB into 0xffffffff or 0x00000000
-  b.n ddot  
+  push {lr}
+  @ In Forth: dup abs <# #S SIGN #>
+  dup @ ( Vorzeichen Zahl )
+
+  .ifdef m0core
+  cmp tos, #0
+  bpl 1f
+  rsbs tos, tos, #0
+1:
+  .else
+  cmp tos, #0 @ abs(tos)
+  it mi
+  rsbsmi tos, tos, #0 @ ( Vorzeichen u )
+  .endif
+
+  bl zifferstringanfang
+  bl alleziffern    @ ( Vorzeichen 0 )
+  swap              @ ( 0 Vorzeichen )
+  bl vorzeichen
+
+dot_inneneinsprung:
+  bl zifferstringende
+  bl type
+  bl space
+  pop {pc}

@@ -367,14 +367,46 @@ setze_faltbarflag:
   b.n setflags
 
 @ -----------------------------------------------------------------------------
+  Wortbirne Flag_immediate, "4-foldable" @ ( -- )
+@ -----------------------------------------------------------------------------
+  pushdaconst Flag_foldable_4
+  b.n setflags
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_immediate, "5-foldable" @ ( -- )
+@ -----------------------------------------------------------------------------
+  pushdaconst Flag_foldable_5
+  b.n setflags
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_immediate, "6-foldable" @ ( -- )
+@ -----------------------------------------------------------------------------
+  pushdaconst Flag_foldable_6
+  b.n setflags
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_immediate, "7-foldable" @ ( -- )
+@ -----------------------------------------------------------------------------
+  pushdaconst Flag_foldable_7
+  b.n setflags
+
+@ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "constant" @ ( n -- )
 @ -----------------------------------------------------------------------------
   push {lr}
   bl create
-  bl literalkomma
+1:bl literalkomma
   pushdaconstw 0x4770 @ Opcode for bx lr
   bl hkomma
   bl setze_faltbarflag
   bl smudge
   pop {pc}
 
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_visible, "2constant" @ ( n -- )
+@ -----------------------------------------------------------------------------
+  push {lr}
+  bl create
+  swap
+  bl literalkomma
+  b.n 1b

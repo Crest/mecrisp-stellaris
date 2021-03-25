@@ -61,7 +61,7 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "nip" @ ( x y -- x )
 @ -----------------------------------------------------------------------------
-  adds psp, #4    @ Move SP to eliminate next element.
+  nip
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -75,11 +75,7 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "tuck" @ ( x1 x2 -- x2 x1 x2 )
 @ -----------------------------------------------------------------------------
-@  ldm psp!, {w}     @ x1 in Register holen
-@  stmdb psp!, {tos} @ x2 nochmal in den Stack
-@  stmdb psp!, {w}   @ x1 wieder obenauf legen
-@  bx lr
-
+tuck:
   ldm psp!, {w}
   subs psp, #8
   str tos, [psp, #4]
@@ -89,12 +85,7 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_3|Flag_inline, "rot" @ ( x w y -- w y x )
 @ -----------------------------------------------------------------------------
-@  ldm psp!, {w, x}    @ Get W and X into registers
-@  stmdb psp!, {w}     @ These two instructions cannot be combined.
-@  stmdb psp!, {tos}   @ (Order will be wrong.)
-@  mov tos, x
-@  bx lr
-
+rot:
   ldm psp!, {w, x}
   subs psp, #8
   str w, [psp, #4]
@@ -105,12 +96,7 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_3|Flag_inline, "-rot" @ ( x w y -- y x w )
 @ -----------------------------------------------------------------------------
-@  ldm psp!, {w, x}    @ Get W and X into registers
-@  stmdb psp!, {tos}   @ These two instructions cannot be combined.
-@  stmdb psp!, {x}     @ (Order will be wrong.)
-@  mov tos, w
-@  bx lr
-
+minusrot:
   ldm psp!, {w, x}
   subs psp, #8
   str tos, [psp, #4]
