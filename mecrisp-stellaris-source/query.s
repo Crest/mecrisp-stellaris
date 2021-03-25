@@ -20,11 +20,11 @@
   Wortbirne Flag_visible, "query"
 query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
 @ -----------------------------------------------------------------------------
-        push    {r0, r1, r2, r3, r4, r5, lr}
+        push    {r0, r1, r2, r3, r4, lr}
 
 
         ldr r0, =Pufferstand @ Aktueller Offset in den Eingabepuffer
-        mov r1, #0
+        movs r1, #0
         strb r1, [r0]
 
 
@@ -45,21 +45,53 @@ query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
         cmp     r0, #8            @ Backspace
         bne     1b                @ Alle anderen Steuerzeichen ignorieren
 
+
         cmp     r2, #0            @ Null Zeichen im Puffer ? Dann ist nichts zu löschen da.
         beq     1b
 
+        movs r0, #8                @ .byte 3, 8, 32, 8  Cursor einen Schritt zurück. Mit Leerzeichen überschreiben. Nochmal zurück.
+        pushda r0
+        bl emit
+        movs r0, #32
+        pushda r0
+        bl emit
+        movs r0, #8
+        pushda r0
+        bl emit
+
+/*
+  @ Ohne Unicode:
         @ Tatsächlich ein Zeichen löschen. Noch ohne Unicode-Unterstützung.
-        sub r2, #1                @ Ein Zeichen weniger im Puffer
-        mov r0, #8                @ .byte 3, 8, 32, 8  Cursor einen Schritt zurück. Mit Leerzeichen überschreiben. Nochmal zurück.
-        pushda r0
-        bl emit
-        mov r0, #32
-        pushda r0
-        bl emit
-        mov r0, #8
-        pushda r0
-        bl emit
-        b 1b
+        subs r2, #1                @ Ein Zeichen weniger im Puffer
+*/
+
+  @ Mit Unicode:
+  
+      @ Unicode-Zeichen sind so aufgebaut:
+      @ 11xx xxxx,  10xx xxxx,  10xx xxxx......
+      @ Wenn das letzte Zeichen also vorne ein 10 hat,
+      @ muss ich so lange weiterlöschen, bis ich eins mit 11 vorne erwische.
+      @ Prüfe natürlich immer, ob der Puffer vielleicht schon leer ist. Ausgetrickst !
+
+4:    cmp     r2, #0            @ Null Zeichen im Puffer ? Dann ist nichts zu löschen da.
+      beq     1b
+
+      @ Hole das letzte Zeichen und schneide es ab.
+      mov     r3, r1            @ Pufferadresse kopieren
+      adds    r3, r2            @ Füllstand hinzuaddieren
+      ldrb    r4, [r3]          @ Letztes Zeichen im Puffer holen
+      subs    r2, #1            @  und abschneiden
+
+      @ Teste das Zeichen auf Unicode, oberstes Bit gesetzt ?
+      tst r4, 0x80
+      beq 1b @ Wenn nein, dann war das ein normales Zeichen und ich bin schon fertig.
+
+      @ Ansonsten könnten noch mehr Unicode-Zeichen folgen.
+      @ Zeichen das erste Byte eines Unicode-Zeichens ?
+      tst r4, 0x40
+      beq 4b @ Wenn nein, lösche ein weiteres Zeichen.      
+      b 1b   @ Wenn ja, fertig. Dann habe ich soeben das erste Byte eines Unicode-Zeichens entfernt.
+       
 
 2:      @ Normale Zeichen annehmen
         cmp     r2, #maximaleeingabe @ Ist der Puffer voll ?
@@ -67,18 +99,16 @@ query: @ ( -- ) Nimmt einen String in den Eingabepuffer auf
 
         pushda r0
         bl emit                   @ Zeichen ausgeben
-        add     r2, #1            @ Pufferfüllstand erhöhen
+        adds     r2, #1            @ Pufferfüllstand erhöhen
         mov     r3, r1            @ Pufferadresse kopieren
-        add     r3, r2            @ Füllstand hinzuaddieren
+        adds     r3, r2            @ Füllstand hinzuaddieren
         strb    r0, [r3]          @ Zeichen in Puffer speichern
         b       1b
 
-3:      mov     r0, #32           @ Statt des Zeilenumbruches ein LEerzeichen ausgeben
+3:      movs    r0, #32           @ Statt des Zeilenumbruches ein LEerzeichen ausgeben
         pushda r0
         bl emit
 
         strb    r2, [r1]          @ Pufferfüllstand schreiben
-@       mov     r0, r1            @ Pufferadresse für type zurückgeben
-@       pushda r0
-        pop     {r0, r1, r2, r3, r4, r5, pc}
+        pop     {r0, r1, r2, r3, r4, pc}
  

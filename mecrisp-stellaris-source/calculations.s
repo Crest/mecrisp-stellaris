@@ -23,7 +23,7 @@
                       @ Adds x1 and x2.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}
-  add tos, w 
+  adds tos, w 
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -31,41 +31,41 @@
                       @ Subtracts x2 from x1.
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}
-  sub tos, w, tos
+  subs tos, w, tos
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "1-" @ ( u -- u-1 )
                       @ Subtracts one from the cell on top of the stack.
 @ -----------------------------------------------------------------------------
-  sub tos, #1
+  subs tos, #1
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "1+" @ ( u -- u+1 )
                        @ Adds one to the cell on top of the stack.
 @ -----------------------------------------------------------------------------
-  add tos, #1
+  adds tos, #1
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "2-" @ ( u -- u-1 )
                       @ Subtracts two from the cell on top of the stack.
 @ -----------------------------------------------------------------------------
-  sub tos, #2
+  subs tos, #2
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "2+" @ ( u -- u+1 )
                        @ Adds two to the cell on top of the stack.
 @ -----------------------------------------------------------------------------
-  add tos, #2
+  adds tos, #2
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "negate" @ ( n1 -- -n1 )
 @ -----------------------------------------------------------------------------
-  rsb tos, tos, #0
+  rsbs tos, tos, #0
   bx lr
 
 @ -----------------------------------------------------------------------------
@@ -80,11 +80,11 @@
   Wortbirne Flag_foldable_2, "u/mod" @ ( u1 u2 -- rem quot )
 u_divmod:                            @ ARM provides no remainder operation, so we fake it by un-dividing and subtracting.
 @ -----------------------------------------------------------------------------
-  ldm psp!, {w}       @ Get u1 into a register
-  mov x, tos         @ Back up the divisor in X.
-  udiv tos, w, tos  @ Divide: quotient in TOS.
-  mul x, tos, x      @ Un-divide to compute remainder.
-  sub w, x            @ Compute remainder.
+  ldm psp!, {w}        @ Get u1 into a register
+  mov x, tos          @ Back up the divisor in X.
+  udiv tos, w, tos   @ Divide: quotient in TOS.
+  muls x, tos, x      @ Un-divide to compute remainder.
+  subs w, x            @ Compute remainder.
   stmdb psp!, {w}
   bx lr
 
@@ -95,8 +95,8 @@ u_divmod:                            @ ARM provides no remainder operation, so w
   ldm psp!, {w}       @ Get u1 into a register
   mov x, tos         @ Back up the divisor in X.
   sdiv tos, w, tos  @ Divide: quotient in TOS.
-  mul x, tos, x      @ Un-divide to compute remainder.
-  sub w, x            @ Compute remainder.
+  muls x, tos, x     @ Un-divide to compute remainder.
+  subs w, x           @ Compute remainder.
   stmdb psp!, {w}  
   bx lr
 
@@ -111,36 +111,36 @@ u_divmod:                            @ ARM provides no remainder operation, so w
   Wortbirne Flag_foldable_2|Flag_inline, "*" @ ( u1|n1 u2|n2 -- u3|n3 )
 @ -----------------------------------------------------------------------------
   ldm psp!, {w}     @ Get u1|n1 into a register.
-  mul tos, w, tos   @ Multiply!
+  muls tos, w, tos   @ Multiply!
   bx lr 
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "2*" @ ( n -- n*2 )
 @ -----------------------------------------------------------------------------
-  lsl tos, #1
+  lsls tos, #1
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "2/" @ ( n -- n/2 )
 @ -----------------------------------------------------------------------------
-  asr tos, #1
+  asrs tos, #1
   bx lr
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "even" @ ( x -- x' )
 @ -----------------------------------------------------------------------------
-  and r1, tos, #1
-  add tos, r1
+  ands r1, tos, #1
+  adds tos, r1
   bx lr
 
 /*
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "even4" @ ( x -- x' )
 @ -----------------------------------------------------------------------------
-  and r1, tos, #1 @ Gerade machen
-  add tos, r1
-  and r1, tos, #2 @ Auf vier gerade machen
-  add tos, r1
+  ands r1, tos, #1 @ Gerade machen
+  adds tos, r1
+  ands r1, tos, #2 @ Auf vier gerade machen
+  adds tos, r1
   bx lr
 */
 
@@ -155,7 +155,7 @@ u_divmod:                            @ ARM provides no remainder operation, so w
   Wortbirne Flag_visible, "binary" @ ( -- )
 @ -----------------------------------------------------------------------------
   ldr r0, =base
-  mov r1, #2
+  movs r1, #2
   str r1, [r0]
   bx lr
 
@@ -163,7 +163,7 @@ u_divmod:                            @ ARM provides no remainder operation, so w
   Wortbirne Flag_visible, "decimal" @ ( -- )
 @ -----------------------------------------------------------------------------
   ldr r0, =base
-  mov r1, #10
+  movs r1, #10
   str r1, [r0]
   bx lr
 
@@ -171,6 +171,6 @@ u_divmod:                            @ ARM provides no remainder operation, so w
   Wortbirne Flag_visible, "hex" @ ( -- )
 @ -----------------------------------------------------------------------------
   ldr r0, =base
-  mov r1, #16
+  movs r1, #16
   str r1, [r0]
   bx lr

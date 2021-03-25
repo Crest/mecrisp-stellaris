@@ -27,14 +27,14 @@ cjumpgenerator: @ ( Adresse-der-Opcodelücke Sprungziel Bitmaske -- )
   popda r0 @ Adresse-der-Opcodelücke
   
   sub r3, r1, r0 @ Differenz aus Lücken-Adresse und Sprungziel bilden
-  sub r3, #4     @ Da der aktuelle Befehl noch läuft und es komischerweise andere Offsets beim ARM gibt.
+  subs r3, #4     @ Da der aktuelle Befehl noch läuft und es komischerweise andere Offsets beim ARM gibt.
 
   @ 8 Bits für die Sprungweiter mit Vorzeichen - 
   @ also habe ich 7 freie Bits, das oberste muss mit dem restlichen Vorzeichen übereinstimmen. 
 
 
   ldr r4, =0xFFFFFF01   @ 7 Bits frei
-  and r4, r3
+  ands r4, r3
   cmp r4, #0  @ Wenn dies Null ergibt, positive Distanz ok.
   beq 1f
 
@@ -48,11 +48,11 @@ cjumpgenerator: @ ( Adresse-der-Opcodelücke Sprungziel Bitmaske -- )
 1:
 
 
-  asr r3, #1 @ Schieben, da die Sprünge immer auf geraden Adressen beginnen und enden.
-  ldr r4, =0xFF @ Genau 8 Bits Sprungmaske.
-  and r3, r4    @ Ausschnitt anwenden
+  asrs r3, #1 @ Schieben, da die Sprünge immer auf geraden Adressen beginnen und enden.
+  mov r4, #0xFF @ Genau 8 Bits Sprungmaske.
+  ands r3, r4    @ Ausschnitt anwenden
 
-  orr r3, r2    @ Sprungbedingung und den Rest des Opcodes hinzufügen
+  orrs r3, r2    @ Sprungbedingung und den Rest des Opcodes hinzufügen
 
 
 
@@ -82,14 +82,14 @@ jumpgenerator: @ ( Adresse-der-Opcodelücke Sprungziel -- )
   popda r0 @ Adresse-der-Opcodelücke
   
   sub r3, r1, r0 @ Differenz aus Lücken-Adresse und Sprungziel bilden
-  sub r3, #4     @ Da der aktuelle Befehl noch läuft und es komischerweise andere Offsets beim ARM gibt.
+  subs r3, #4     @ Da der aktuelle Befehl noch läuft und es komischerweise andere Offsets beim ARM gibt.
 
   @ 11 Bits für die Sprungweiter mit Vorzeichen - 
   @ also habe ich 10 freie Bits, das oberste muss mit dem restlichen Vorzeichen übereinstimmen. 
 
 
   ldr r4, =0xFFFFF801  @ 10 Bits frei
-  and r4, r3
+  ands r4, r3
   cmp r4, #0  @ Wenn dies Null ergibt, positive Distanz ok.
   beq 1f
 
@@ -102,11 +102,11 @@ jumpgenerator: @ ( Adresse-der-Opcodelücke Sprungziel -- )
 
 1:
 
-  asr r3, #1 @ Schieben, da die Sprünge immer auf geraden Adressen beginnen und enden.
+  asrs r3, #1 @ Schieben, da die Sprünge immer auf geraden Adressen beginnen und enden.
   ldr r4, =0x7FF @ Genau 11 Bits Sprungmaske.
-  and r3, r4     @ Ausschnitt anwenden
+  ands r3, r4     @ Ausschnitt anwenden
 
-  orr r3, 0xE000  @ Rest des Opcodes hinzufügen
+  orrs r3, 0xE000  @ Rest des Opcodes hinzufügen
 
   b sprungbefehl_einfuegen
 
@@ -178,7 +178,7 @@ nullprobekomma:
   push {lr}
   pushdaconst 0x2e00 @ cmp tos, #0
   bl hkomma
-  pushdaconst 0xcf40 @ drop
+  pushdaconstw 0xcf40 @ drop
   bl hkomma
   pop {pc}
 
@@ -344,7 +344,7 @@ struktur_if: @ ( -- Adresse-für-Sprung 2 )
   push {lr}
   bl struktur_if @ Benutze einfach mal If.
   @ ( Sprungziel Adresse-Für-Sprung 2 )
-  add tos, #2
+  adds tos, #2
   @ ( Sprungziel Adresse-Für-Sprung 4 ) ; Strukturkennung 4 !
   pop {pc}
 

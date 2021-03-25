@@ -40,7 +40,7 @@ smudge:
     push {lr}
 
     @ r1 enthält den DictionaryPointer.
-    sub r1, #2
+    subs r1, #2
     ldrh r2, [r1]
     ldr r3, =0xFFFF
     cmp r2, r3
@@ -98,7 +98,7 @@ setflags:
   @ Setflags für Flash
   ldr r0, =FlashFlags
   ldr r1, [r0]
-  orr r1, tos  @ Flashflags beginnt von create aus immer mit "Sichtbar" = 0.
+  orrs r1, tos  @ Flashflags beginnt von create aus immer mit "Sichtbar" = 0.
   str r1, [r0]
   drop
   pop {pc}
@@ -149,7 +149,7 @@ setflags_ram:
   @ Variablenpointer erniedrigen und zurückschreiben
   ldr r0, =VariablenPointer
   ldr r1, [r0]
-  sub r1, #4  @ Ram voll ?
+  subs r1, #4  @ Ram voll ?
   str r1, [r0]
 
   @ Stelle Initialisieren:
@@ -158,7 +158,7 @@ setflags_ram:
   @ Code schreiben:
   pushda r1
   bl literalkomma    @ Adresse im Ram immer mit movt --> 12 Bytes
-  pushdaconst 0x4770 @ Opcode für bx lr --> 2 Bytes
+  pushdaconstw 0x4770 @ Opcode für bx lr --> 2 Bytes
   bl hkomma
   bl komma @ Initialisierungswert brennen
 
@@ -174,10 +174,10 @@ variable_ram:
 
   @ Hole den Dictionarypointer.
   bl here
-  add tos, #14 @ Länge der Befehle
+  adds tos, #14 @ Länge der Befehle
 
   bl literalkomma    @ Adresse im Ram immer mit movt --> 12 Bytes
-  pushdaconst 0x4770 @ Opcode für bx lr --> 2 Bytes
+  pushdaconstw 0x4770 @ Opcode für bx lr --> 2 Bytes
   bl hkomma
   bl komma @ Variable initialisieren oder den Initialisierungswert brennen
 
@@ -306,7 +306,7 @@ komma: @ Fügt 32 Bits an das Dictionary an.
   popda r2
   str r2, [r1] @ Schreibe das Halbword in das Dictionary
 
-  add r1, #4 @ Erhöhe den Dictionarypointer
+  adds r1, #4 @ Erhöhe den Dictionarypointer
   str r1, [r0] @ und schreibe ihn zurück
 
   bx lr
@@ -320,11 +320,11 @@ komma: @ Fügt 32 Bits an das Dictionary an, in zwei Stücken, damit es nicht au
 
   dup
   ldr r0, =0xffff @ Low-Teil zuerst - Little Endian ! Außerdem stimmen so die Linkfelder.
-  and r0, tos
+  ands r0, tos
   bl hkomma
 
   ldr r0, =0xffff0000 @ High-Teil danach
-  and r0, tos
+  ands r0, tos
   lsr tos, #16
   bl hkomma
 
@@ -339,12 +339,12 @@ reversekomma: @ Fügt 32 Bits an das Dictionary an, in zwei Stücken, damit es n
 
   dup
   ldr r0, =0xffff0000 @ High-Teil danach
-  and r0, tos
-  lsr tos, #16
+  ands r0, tos
+  lsrs tos, #16
   bl hkomma
 
   ldr r0, =0xffff @ Low-Teil zuerst - Little Endian ! Außerdem stimmen so die Linkfelder.
-  and r0, tos
+  ands r0, tos
   bl hkomma
 
   pop {r0, r1, r2, pc}
@@ -411,7 +411,7 @@ stringkomma: @ Fügt ein String an das Dictionary an
         beq     2f
 
         @ Es ist etwas zum Tippen da !
-1:      add     r3, #1   @ Adresse um eins erhöhen
+1:      adds     r3, #1   @ Adresse um eins erhöhen
         ldrb    r0, [r3] @ Zeichen holen
         pushda r0
           push {r0, r1, r3}
@@ -437,7 +437,7 @@ allot:  @ Überprüft auch gleich, ob ich mich noch im Ram befinde.
 
   @ Allot-Flash:
   popda r2    @ Gewünschte Länge
-  add r1, r2  @ Pointer vorrücken
+  adds r1, r2  @ Pointer vorrücken
 
   ldr r2, =FlashDictionaryEnde
  
@@ -450,7 +450,7 @@ allot:  @ Überprüft auch gleich, ob ich mich noch im Ram befinde.
   @ Allot-Ram:
 allot_ram:
   popda r2    @ Gewünschte Länge
-  add r1, r2  @ Pointer vorrücken
+  adds r1, r2  @ Pointer vorrücken
 
 @ ldr r2, =RamDictionaryEnde
   ldr r2, =VariablenPointer  @ Am Ende des RAMs liegen die Variablen. Diese sind die Ram-Voll-Grenze...
@@ -628,7 +628,7 @@ create: @ Nimmt das nächste Token aus dem Puffer,
   @writeln "Create-Flash"
 
   ldr r0, =FlashFlags
-  mov r1, #Flag_visible
+  movs r1, #Flag_visible
   str r1, [r0]  @ Flags vorbereiten
 
   pushdaconst 4 @ Lücke für die Flags lassen
@@ -648,7 +648,7 @@ create: @ Nimmt das nächste Token aus dem Puffer,
   ldr r0, =Fadenende @ Hole das aktuelle Fadenende
   ldr r1, [r0]
 
-  add r1, #4 @ Flag-Feld überspringen
+  adds r1, #4 @ Flag-Feld überspringen
 
   ldr r2, [r1] @ Inhalt des Flag-Feldes holen
   cmp r2, #-1  @ Ist der Link ungesetzt ?
@@ -686,7 +686,7 @@ create_ram:
   @ Flags setzen
   @ pushdaconst Flag_invisible
   stmdb psp!, {tos}
-  mov tos, #Flag_invisible
+  movs tos, #Flag_invisible
   bl komma
 
   @ ( Tokenadresse Neue-Linkadresse )
@@ -833,10 +833,10 @@ skipstring: @ Überspringt einen String, dessen Adresse in r0 liegt.
   push {r3, r4}
     @ String überlesen und Pointer gerade machen
     ldrb r3, [r0] @ Länge des Strings holen
-    add r3, #1    @ Plus 1 Byte für die Länge
-    and r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
-    add r3, r4
-    add r0, r3  
+    adds r3, #1    @ Plus 1 Byte für die Länge
+    ands r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
+    adds r3, r4
+    adds r0, r3  
   pop {r3, r4}
   bx lr
 
@@ -860,27 +860,27 @@ find: @ ( str -- Code-Adresse Flags )
   bl dictionarystart
   popda r0
 
-  mov r3, #0   @ Noch keinen Treffer
-  mov r4, #0   @ Und noch keine Trefferflags
+  movs r3, #0   @ Noch keinen Treffer
+  movs r4, #0   @ Und noch keine Trefferflags
 
 
 1:   @ Ist an der Stelle der Flags und der Namenslänge $FFFF ? Dann ist der Faden abgelaufen.
      @ Prüfe hier die Namenslänge als Kriterium
-     add r0, #8 @ 4 Bytes Flags 4 Bytes Link
+     adds r0, #8 @ 4 Bytes Flags 4 Bytes Link
      ldrb r1, [r0] @ Hole Namenslänge
      cmp r1, #0xFF
      beq 3f        @ Fadenende erreicht
-     sub r0, #8
+     subs r0, #8
 
 
         @ Adresse in r0 zeigt auf:
         @   --> Flagfeld
         ldr r1, [r0]  @ Aktuelle Flags lesen
-        add r0, #4
+        adds r0, #4
 
         @   --> Link
         ldr r2, [r0]  @ Aktuellen Link lesen
-        add r0, #4
+        adds r0, #4
 
         cmp r1, #-1   @ Flag_invisible ? Überspringen !
         beq 2f

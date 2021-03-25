@@ -39,7 +39,7 @@
   beq 2f
 
   @ Prüfe die Adresse: Sie muss auf 4 gerade sein:
-  and r2, r0, #3
+  ands r2, r0, #3
   cmp r2, #0
   bne 3f
 
@@ -67,7 +67,7 @@ flashkomma_innen:
   str r3, [r2]
 
 1:ldr r3, [r2]       @ 4. Poll the FMC register until the WRITE bit is cleared.
-  and r3, #1
+  ands r3, #1
   cmp r3, #0
   bne 1b
 
@@ -90,7 +90,7 @@ h_flashkomma:
   beq 2b
 
   @ Prüfe die Adresse: Sie muss auf 2 gerade sein:
-  and r2, r0, #1
+  ands r2, r0, #1
   cmp r2, #0
   bne 3b
 
@@ -102,13 +102,13 @@ h_flashkomma:
 h_flashkomma_innen:
   @ Alles okay, alle Proben bestanden. Kann beginnen, zu schreiben.
   @ Ist die Adresse auf 4 gerade ?
-  and r2, r0, #2
+  ands r2, r0, #2
   cmp r2, #0
   beq hflash_gerade
 
   @ hflash! ungerade:
   @ Muss an der auf 4 geraden Adresse davor ein Word holen.
-  sub r0, #2
+  subs r0, #2
   ldrh r5, [r0]
   lsl r1, #16  @ Die Daten hochschieben
   orr r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
@@ -117,10 +117,10 @@ h_flashkomma_innen:
 
   @ hflash! gerade:
 hflash_gerade:
-  add r4, r0, #2
+  adds r4, r0, #2
   ldrh r5, [r4]
-  lsl r5, #16
-  orr r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
+  lsls r5, #16
+  orrs r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
   @ Fertig. Habe die Daten für den auf 4 geraden Zugriff fertig.
   b flashkomma_innen
 
@@ -150,25 +150,25 @@ c_flashkomma:
 
   @ Alles okay, alle Proben bestanden. Kann beginnen, zu schreiben.
   @ Ist die Adresse auf 2 gerade ?
-  and r2, r0, #1
+  ands r2, r0, #1
   cmp r2, #0
   beq cflash_gerade
 
   @ cflash! ungerade:
   @ Muss an der geraden Adresse davor ein Word holen.
-  sub r0, #1
+  subs r0, #1
   ldrb r5, [r0]
-  lsl r1, #8  @ Die Daten hochschieben
-  orr r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
+  lsls r1, #8  @ Die Daten hochschieben
+  orrs r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
   @ Fertig. Habe die Daten für den auf 4 geraden Zugriff fertig.
   b h_flashkomma_innen
 
   @ cflash! gerade:
 cflash_gerade:
-  add r4, r0, #1
+  adds r4, r0, #1
   ldrb r5, [r4]
-  lsl r5, #8
-  orr r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
+  lsls r5, #8
+  orrs r1, r5 @ Den Inhalt zu den gewünschten Daten hinzuverodern
   @ Fertig. Habe die Daten für den auf 4 geraden Zugriff fertig.
   b h_flashkomma_innen
 
@@ -196,7 +196,7 @@ flashpageerase:
   str r3, [r2]
 
 1:ldr r3, [r2]       @ 3. Poll the FMC register until the ERASE bit is cleared
-  and r3, #2
+  ands r3, #2
   cmp r3, #0
   bne 1b
 
@@ -225,7 +225,7 @@ eraseflash_intern:
             bl hexdot
             writeln " aus dem Flash"
           bl flashpageerase
-2:      add r0, #2
+2:      adds r0, #2
         cmp r0, r1
         bne 1b
   writeln "Fertig. Reset !"

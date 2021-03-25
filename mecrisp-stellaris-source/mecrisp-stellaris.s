@@ -50,19 +50,8 @@
 
 @ -----------------------------------------------------------------------------
 @ Interruptvektortabelle
-
-.word   returnstackanfang  /* stack top address */
-.word   Reset+1      /* Reset Vector  +1 wegen des Thumb-Einsprunges */
-.word   nullhandler+1
-.word   nullhandler+1
-/* ... Interruptvektortabelle noch leer */
-
-nullhandler:   
-  writeln "Falle!"
-  b nullhandler
+.include "vectors.s"
 @ -----------------------------------------------------------------------------
-
-
 
 
 @ Zweiter Versuch, den Datenstack zu implementieren, mit TOS im Register.
@@ -75,6 +64,11 @@ x .req r1
 y .req r2
 
 .macro pushdaconst zahl
+  stmdb psp!, {tos}
+  movs tos, #\zahl
+.endm
+
+.macro pushdaconstw zahl
   stmdb psp!, {tos}
   movw tos, #\zahl
 .endm
@@ -135,6 +129,13 @@ y .req r2
 
 
 
+.set CoreVariablenPointer, RamDictionaryEnde
+.macro CoreVariable, Name @  Benutze den Mechanismus, um initialisierte Variablen zu erhalten.
+  .set CoreVariablenPointer, CoreVariablenPointer - 4
+  .equ \Name, CoreVariablenPointer
+.endm
+
+
 @.set Latest, 0xFFFFFFFF  @ Zeiger auf das letzte definierte Wort
 
 .set Latest, FlashDictionaryAnfang @ Zeiger auf das letzte definierte Wort
@@ -180,6 +181,7 @@ y .req r2
   .include "token.s"
   .include "numberstrings.s"
   .include "interpreter.s"
+  .include "interrupts.s"
 
 .equ CoreDictionaryAnfang, Latest
 
@@ -190,9 +192,9 @@ Reset:  @ Einsprung zu Beginn
 
         ldr r0, =0x20000000
         ldr r1, =0x20008000
-        mov r2, #-1
+        movs r2, #-1
 1:      strh r2, [r0]
-        add r0, #2
+        adds r0, #2
         cmp r0, r1
         bne 1b
 
@@ -228,15 +230,15 @@ Reset_mit_Inhalt:
 
   @ Genauso wie in quit. Hier nochmal, damit quit nicht nach dem Init-Einsprung nochmal tätig wird.
   ldr r0, =base
-  mov r1, #10
+  movs r1, #10
   str r1, [r0]
 
   ldr r0, =state
-  mov r1, #0
+  movs r1, #0
   str r1, [r0]
 
   ldr r0, =konstantenfaltungszeiger
-  mov r1, #0
+  movs r1, #0
   str r1, [r0]
 
         ldr r0, =init_name

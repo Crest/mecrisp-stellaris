@@ -22,7 +22,7 @@
   Wortbirne Flag_visible, "token" @ ( -- Addr )
 token:
 @ -----------------------------------------------------------------------------
-  mov r0, #32 @ Leerzeichen
+  movs r0, #32 @ Leerzeichen
   pushda r0
   b parse
 
@@ -46,7 +46,7 @@ parse:
   ldrb r2, [r2]          @ Aktuellen Pufferstand
 
   ldr r3, =Tokenpuffer   @ Pointer für den Sammelpuffer
-  mov r4, #0             @ Zahl der aktuell gesammelten Zeichen
+  movs r4, #0             @ Zahl der aktuell gesammelten Zeichen
 
   @ TOS                  @ Gesuchtes Trennzeichen
 
@@ -56,7 +56,7 @@ parse:
 @  writeln " ist der Pufferstand"
 
   @ Beginne beim Pufferstand:
-  add r0, r2 @ Aktuellen Pufferstand zum Pointer hinzuaddieren
+  adds r0, r2 @ Aktuellen Pufferstand zum Pointer hinzuaddieren
 
 
 
@@ -69,8 +69,8 @@ parse:
     beq 3f
 
     @ Hole ein Zeichen.  
-    add r0, #1 @ Eingabepufferzeiger um ein Zeichen weiterrücken.
-    add r2, #1 @ Pufferstand um ein Zeichen weiterschieben
+    adds r0, #1 @ Eingabepufferzeiger um ein Zeichen weiterrücken.
+    adds r2, #1 @ Pufferstand um ein Zeichen weiterschieben
 @    writeln "Hole vorab"
     @ Hole an der Stelle ein Zeichen und entscheide, was damit zu tun ist.
     ldrb r5, [r0]
@@ -88,8 +88,8 @@ parse:
   beq 3f
 
   @ Zweiter Schritt: Hole ein Zeichen.  
-  add r0, #1 @ Eingabepufferzeiger um ein Zeichen weiterrücken.
-  add r2, #1 @ Pufferstand um ein Zeichen weiterschieben
+  adds r0, #1 @ Eingabepufferzeiger um ein Zeichen weiterrücken.
+  adds r2, #1 @ Pufferstand um ein Zeichen weiterschieben
 @  writeln "Hole"
   @ Hole an der Stelle ein Zeichen und entscheide, was damit zu tun ist.
   ldrb r5, [r0]
@@ -97,8 +97,8 @@ parse:
   beq 3f
 
 5: @ Wenn es mir gefällt, nimm es in den Tokenpuffer auf.
-  add r3, #1 @ Pointer weiterschieben
-  add r4, #1 @ Zahl der gesammelten Zeichen weiterschieben
+  adds r3, #1 @ Pointer weiterschieben
+  adds r4, #1 @ Zahl der gesammelten Zeichen weiterschieben
   strb r5, [r3]
 @  writeln "Sammele"
   b 2b @ Sammelschleife

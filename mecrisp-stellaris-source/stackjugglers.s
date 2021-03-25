@@ -23,7 +23,7 @@
 @ -----------------------------------------------------------------------------
   @ Berechne den Stackfüllstand
   ldr r1, =datenstackanfang @ Anfang laden
-  sub r1, psp @ und aktuellen Stackpointer abziehen
+  subs r1, psp @ und aktuellen Stackpointer abziehen
   lsr r1, r1, #2 @ Durch 4 teilen
   pushda r1
   bx lr
@@ -59,7 +59,7 @@
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "nip" @ ( x y -- x )
 @ -----------------------------------------------------------------------------
-  add psp, #4    @ Move SP to eliminate next element.
+  adds psp, #4    @ Move SP to eliminate next element.
   bx lr
 
 @ -----------------------------------------------------------------------------

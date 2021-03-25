@@ -35,7 +35,7 @@
 
   ldr r0, =CoreDictionaryAnfang   @ Hier fängt es an.
 
-  ldr r5, =RamDictionaryEnde @ mov #nRamDictionaryEnde, r12 ; Fürs Abzählen des Variablenplatzes
+  ldr r5, =RamDictionaryEnde @ Fürs Abzählen des Variablenplatzes
 
   @ Zwei Möglichkeiten: Vorwärtslink ist $FFFF --> Ende gefunden
   @ Oder Vorwärtslink gesetzt, aber an der Stelle der Namenslänge liegt $FFFF. Dann ist das Ende auch da.
@@ -54,11 +54,11 @@ SucheFlashPointer_Hangelschleife:
   @ Adresse in r0 zeigt auf:
   @   --> Flagfeld
   ldr r1, [r0]  @ Aktuelle Flags lesen
-  add r0, #4
+  adds r0, #4
 
   @   --> Link
   ldr r2, [r0]  @ Aktuellen Link lesen
-  add r0, #4
+  adds r0, #4
 
   @   --> Namen
   @ Prüfe für die Rambelegung die Flags der aktuellen Definition:
@@ -71,11 +71,11 @@ SucheFlashPointer_Hangelschleife:
     beq Sucheflashpointer_Speicherbelegung_fertig @ Benötigt doch kein RAM.
       writeln "Speicher gewünscht !"
       @ Die Flags werden später nicht mehr gebraucht.
-      and r1, #0x0F @ Das unterste Nibble maskieren
+      ands r1, #0x0F @ Das unterste Nibble maskieren
 
         @ Bei Null Bytes brauche ich nichts zu kopieren, den Fall erkennt move.
-        lsl r1, #2 @ Mit vier malnehmen
-        sub r5, r1 @ Ramvariablenpointer wandern lassen
+        lsls r1, #2 @ Mit vier malnehmen
+        subs r5, r1 @ Ramvariablenpointer wandern lassen
 
         @ Den neu geschaffenen Platz initialisieren !
         @ r0 zeigt gerade auf das Namensfeld und wird danach nicht mehr benötigt.
@@ -106,7 +106,7 @@ Sucheflashpointer_Speicherbelegung_fertig:
   mov r0, r2
 
   @ Prüfe, ob die Namenslänge an der Stelle etwas anderes als $FF ist:
-  add r2, #8 @ Flags und Link überlegen
+  adds r2, #8 @ Flags und Link überlegen
   ldrb r2, [r2]
   cmp r2, #0xFF @ Ist an der Stelle der Namenslänge $FF ? Dann ist das Fadenende erreicht.
   beq SucheFlashPointer_Fadenende_gefunden
@@ -149,12 +149,12 @@ SucheFlashPointer_Fadenende_gefunden:
 1:cmp r0, r1 @  Wenn ich am Anfang angelangt bin, ist das der DictionaryPointer.
   beq 2f
 
-  sub r0, #2
+  subs r0, #2
   ldrh r3, [r0]
   cmp r3, r2 @ 0xFFFF
   beq 1b @ Wenn es nicht gleich ist, habe ich eine Füllung gefunden.
 
-  add r0, #2
+  adds r0, #2
 
 2:@ Dictionarypointer gefunden.
   ldr r1, =ZweitDictionaryPointer

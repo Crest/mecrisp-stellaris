@@ -46,8 +46,8 @@ compare: @ ( str1 str2 -- f ) Vergleicht zwei Strings
         bne     2f                @ Wenn nicht, sind die Strings ungleich.
   @ writeln "Länge ok"
         @ Länge größer als Null, vergleiche also Byte für Byte.
-1:      add r0, #1                @ Zeiger weiterrücken
-        add r1, #1
+1:      adds r0, #1                @ Zeiger weiterrücken
+        adds r1, #1
 
         ldrb r3, [r0]             @ Hole ein Zeichen aus dem ersten String
         ldrb r4, [r1]             @ Hole ein Zeichen aus dem zweiten String
@@ -62,12 +62,12 @@ compare: @ ( str1 str2 -- f ) Vergleicht zwei Strings
         cmp     r3, r4            @ Sind die Zeichen gleich ?
         bne     2f                @ Wenn nicht, sind die Strings ungleich.
 
-        sub r2, #1                @ Ein Zeichen weniger
+        subs r2, #1                @ Ein Zeichen weniger
         cmp r2, #0                @ Sind noch Zeichen übrig ?
         bne 1b
 
   @ writeln "Gleich !"
-        mov r0, #-1
+        movs r0, #-1
         pushda r0
         pop     {r0, r1, r2, r3, r4}
         bx lr
@@ -158,7 +158,7 @@ holechar: @ ( -- Zeichen )
 @------------------------------------------------------------------------------
   push {lr}
   bl token    @ Gibt Stringadresse zurück
-  add tos, #1 @ Pointer um eine Stelle auf das erste Zeichen im String weiterschieben.
+  adds tos, #1 @ Pointer um eine Stelle auf das erste Zeichen im String weiterschieben.
   ldrb tos, [tos] @ Zeichen an der Stelle holen
   pop {pc}
 
@@ -230,13 +230,13 @@ dotgaensefuesschen: @ Gibt den inline folgenden String aus und überspringt ihn
   push {r2, r3, r4}
 
   mov r2, lr
-  sub r2, #1
+  subs r2, #1
   pushda r2
         ldrb r3, [r2] @ Länge des Strings holen
-        add r3, #1    @ Plus 1 Byte für die Länge
-        and r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
-        add r3, r4
-        add lr, r3
+        adds r3, #1    @ Plus 1 Byte für die Länge
+        ands r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
+        adds r3, r4
+        adds lr, r3
 
   pop {r2, r3, r4}
   b type
@@ -253,13 +253,13 @@ dotfuesschen: @ Legt den inline folgenden String auf den Stack und überspringt 
   push {r2, r3, r4}
 
   mov r2, lr
-  sub r2, #1
+  subs r2, #1
   pushda r2
         ldrb r3, [r2] @ Länge des Strings holen
-        add r3, #1    @ Plus 1 Byte für die Länge
-        and r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
-        add r3, r4
-        add lr, r3
+        adds r3, #1    @ Plus 1 Byte für die Länge
+        ands r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
+        adds r3, r4
+        adds lr, r3
 
   pop {r2, r3, r4}
   bx lr
@@ -281,7 +281,7 @@ type: @ ( str -- ) Gibt einen String aus
         beq     2f
 
         @ Es ist etwas zum Tippen da !
-1:      add     r3, #1   @ Adresse um eins erhöhen
+1:      adds     r3, #1   @ Adresse um eins erhöhen
         ldrb    r0, [r3] @ Zeichen holen
         pushda r0
         bl emit     @ Zeichen senden

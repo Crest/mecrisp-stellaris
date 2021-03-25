@@ -120,7 +120,7 @@ interpret:
     mov r5, #0   @ Konstantenfaltungszeiger löschen
     str r5, [r4]
 
-    and r3, r1, #Flag_immediate_compileonly
+    ands r3, r1, #Flag_immediate_compileonly
     cmp r3, #Flag_immediate_compileonly
     bne .ausfuehren
 
@@ -145,15 +145,15 @@ interpret:
 5:@ Im Kompilierzustand.
 
     @ Prüfe das Ramallot-Flag, das automatisch 0-faltbar bedeutet:
-    mov r0, #Flag_ramallot
-    and r0, r1 @ Flagfeld auf Faltbarkeit hin prüfen
+    movs r0, #Flag_ramallot
+    ands r0, r1 @ Flagfeld auf Faltbarkeit hin prüfen
     cmp r0, #Flag_ramallot
     beq .interpret_faltoptimierung
 
     @ Bestimme die Anzahl der zur Faltung bereitliegenden Konstanten:
 
-    sub r3, r5, psp @ Konstantenfüllstandszeiger - Aktuellen Stackpointer
-    lsr r3, #2      @ Durch 4 teilen
+    subs r3, r5, psp @ Konstantenfüllstandszeiger - Aktuellen Stackpointer
+    lsrs r3, #2      @ Durch 4 teilen
 
     @write "Konstantenschreiben-Füllstand: "
     @pushda r3  @ erstmal zur Probe ausgeben:
@@ -162,15 +162,15 @@ interpret:
 
     @ Prüfe die Faltbarkeit des aktuellen Tokens:
     
-    mov r0, #Flag_foldable
-    and r0, r1 @ Flagfeld auf Faltbarkeit hin prüfen
+    movs r0, #Flag_foldable
+    ands r0, r1 @ Flagfeld auf Faltbarkeit hin prüfen
     cmp r0, #Flag_foldable
     bne .konstantenschleife
 
       @writeln "Ist faltbar"
       @ Prüfe, ob genug Konstanten da sind:
-      mov r0, #0x0F
-      and r0, r1 @ Zahl der benötigten Konstanten maskieren
+      movs r0, #0x0F
+      ands r0, r1 @ Zahl der benötigten Konstanten maskieren
 
     @write "Benötigt "
     @pushda r0  @ erstmal zur Probe ausgeben:
@@ -194,7 +194,7 @@ interpret:
 .konstanteninnenschleife:
 
     @ Schleife über r5 :-)
-    sub r3, #1 @ Weil Pick das oberste Element mit Null addressiert.
+    subs r3, #1 @ Weil Pick das oberste Element mit Null addressiert.
     pushda r3
     ldr tos, [psp, tos, lsl #2] @ pick
     bl literalkomma
@@ -204,7 +204,7 @@ interpret:
     bne .konstanteninnenschleife
    
     @ Die geschriebenen Konstanten herunterwerfen.
-    sub r5, #4   @ TOS wurde beim drauflegen der Konstanten gesichert.
+    subs r5, #4   @ TOS wurde beim drauflegen der Konstanten gesichert.
     mov psp, r5  @ Pointer zurückholen
     drop         @ Das alte TOS aus seinem Platz auf dem Stack zurückholen.
 
@@ -212,14 +212,14 @@ interpret:
   @ Ist eine Konstante da, schreibe sie !
   
 
-  mov r5, #0   @ Konstantenfaltungszeiger löschen
+  movs r5, #0   @ Konstantenfaltungszeiger löschen
   str r5, [r4]
 
   @ writeln "Kompilieren"
 
   pushda r2 @ Adresse zum klassischen Bearbeiten.
 
-  and r2, r1, #Flag_immediate
+  ands r2, r1, #Flag_immediate
   cmp r2, #Flag_immediate
   bne 6f
     @ writeln "Immediate"
@@ -227,7 +227,7 @@ interpret:
     bl execute @ Ausführen.
     b 1b @ Zurück in die Interpret-Schleife.        
 
-6:and r2, r1, #Flag_inline
+6:ands r2, r1, #Flag_inline
   cmp r2, #Flag_inline
   bne 7f
   
@@ -251,15 +251,15 @@ quit:
   @ Base und State setzen
 
   ldr r0, =base
-  mov r1, #10
+  movs r1, #10
   str r1, [r0]
 
   ldr r0, =state
-  mov r1, #0
+  movs r1, #0
   str r1, [r0]
 
   ldr r0, =konstantenfaltungszeiger
-  mov r1, #0
+  movs r1, #0
   str r1, [r0]
 
 quit_innenschleife:

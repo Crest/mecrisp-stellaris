@@ -68,8 +68,8 @@ move_vorwaerts:
 
 2:ldrb r3, [r0] @ Von der Quelladresse an die Zieladresse kopieren
   strb r3, [r1]
-  add  r0, #1  @ Quelladresse erhöhen
-  add  r1, #1  @  Zieladresse erhöhen
+  adds  r0, #1  @ Quelladresse erhöhen
+  adds  r1, #1  @  Zieladresse erhöhen
   subs r2, #1  @ Zahl der noch zu kopierenden Bytes erniedrigen
   bne 2b       @ Sind noch welche übrig ?
 
@@ -107,7 +107,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos]       @ Load the current cell value
-  add y, w            @ Do the add
+  adds y, w            @ Do the add
   str y, [tos]       @ Store it back
   mov tos, x
   bx lr
@@ -134,7 +134,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrh y, [tos]       @ Load the current cell value
-  add y, w            @ Do the add
+  adds y, w            @ Do the add
   strh y, [tos]       @ Store it back
   mov tos, x
   bx lr
@@ -161,7 +161,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrb y, [tos]       @ Load the current cell value
-  add y, w            @ Do the add
+  adds y, w            @ Do the add
   strb y, [tos]       @ Store it back
   mov tos, x
   bx lr
@@ -172,7 +172,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos] @ Alten Inhalt laden
-  orr y, w     @ Hinzuverodern
+  orrs y, w     @ Hinzuverodern
   str y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
@@ -183,7 +183,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos] @ Alten Inhalt laden
-  bic y, w     @ Hinzuverodern
+  bics y, w     @ Hinzuverodern
   str y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
@@ -194,7 +194,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldr y, [tos] @ Alten Inhalt laden
-  eor y, w     @ Hinzuverodern
+  eors y, w     @ Hinzuverodern
   str y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
@@ -217,7 +217,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrh y, [tos] @ Alten Inhalt laden
-  orr y, w     @ Hinzuverodern
+  orrs y, w     @ Hinzuverodern
   strh y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
@@ -228,7 +228,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrh y, [tos] @ Alten Inhalt laden
-  bic y, w     @ Hinzuverodern
+  bics y, w     @ Hinzuverodern
   strh y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
@@ -239,7 +239,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrh y, [tos] @ Alten Inhalt laden
-  eor y, w     @ Hinzuverodern
+  eors y, w     @ Hinzuverodern
   strh y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
@@ -263,7 +263,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrb y, [tos] @ Alten Inhalt laden
-  orr y, w     @ Hinzuverodern
+  orrs y, w     @ Hinzuverodern
   strb y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
@@ -274,7 +274,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrb y, [tos] @ Alten Inhalt laden
-  bic y, w     @ Hinzuverodern
+  bics y, w     @ Hinzuverodern
   strb y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr
@@ -285,7 +285,7 @@ move_fertig:
 @ -----------------------------------------------------------------------------
   ldm psp!, {w, x} @ X is the new TOS after the store completes.
   ldrb y, [tos] @ Alten Inhalt laden
-  eor y, w     @ Hinzuverodern
+  eors y, w     @ Hinzuverodern
   strb y, [tos] @ Zurückschreiben
   mov tos, x
   bx lr

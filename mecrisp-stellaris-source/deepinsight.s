@@ -55,7 +55,7 @@ dots: @ Malt den Stackinhalt
 
         @ Berechne den Stackfüllstand
         ldr r1, =datenstackanfang @ Anfang laden
-        sub r1, psp @ und aktuellen Stackpointer abziehen
+        subs r1, psp @ und aktuellen Stackpointer abziehen
 
         mov r0, r1 @ erstmal zur Probe ausgeben:
         pushda r0
@@ -63,7 +63,7 @@ dots: @ Malt den Stackinhalt
 
         write "/ 4 = "
 
-        lsr r1, r1, #2 @ Durch 4 teilen
+        lsrs r1, #2 @ Durch 4 teilen
 
         mov r0, r1 @ erstmal zur Probe ausgeben:
         pushda r0
@@ -82,9 +82,8 @@ dots: @ Malt den Stackinhalt
         pushda r0
         bl hexdot
 
-        sub r2, #4
-        sub r1, #1
-        cmp r1, #0
+        subs r2, #4
+        subs r1, #1
         bne 1b
 
 2:      @ TOS zeigen
@@ -113,7 +112,7 @@ dump: @ Malt den Speicherinhalt beginnend ab der angegebenen Adresse
   pushda r2
   bl hexdot
   writeln " >"
-  add r0, #2
+  adds r0, #2
   subs r1, #1
   bne 1b
 
@@ -132,11 +131,11 @@ words: @ Malt den Dictionaryinhalt
 
 1:   @ Ist an der Stelle der Flags und der Namenslänge $FFFF ? Dann ist der Faden abgelaufen.
      @ Prüfe hier die Namenslänge als Kriterium
-     add r0, #8 @ 4 Bytes Flags 4 Bytes Link
+     adds r0, #8 @ 4 Bytes Flags 4 Bytes Link
      ldrb r1, [r0] @ Hole Namenslänge
      cmp r1, #0xFF
      beq 2f
-     sub r0, #8
+     subs r0, #8
 
         @ Adresse:
         write "Address: "
@@ -145,7 +144,7 @@ words: @ Malt den Dictionaryinhalt
 
         @ Flagfeld
         ldr r1, [r0]
-        add r0, #4
+        adds r0, #4
         write "Flags: "
         pushda r1
         bl hexdot
@@ -153,7 +152,7 @@ words: @ Malt den Dictionaryinhalt
         @ Link
         write "Link: "
         ldr r2, [r0]
-        add r0, #4
+        adds r0, #4
         pushda r2
         bl hexdot
 
@@ -163,10 +162,10 @@ words: @ Malt den Dictionaryinhalt
         @bl type
 
         ldrb r3, [r0] @ Länge des Strings holen
-        add r3, #1    @ Plus 1 Byte für die Länge
-        and r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
-        add r3, r4
-        add r0, r3
+        adds r3, #1    @ Plus 1 Byte für die Länge
+        ands r4, r3, #1 @ Wenn es ungerade ist, noch einen mehr:
+        adds r3, r4
+        adds r0, r3
 
         @ Einsprungadresse
         write "Code: "

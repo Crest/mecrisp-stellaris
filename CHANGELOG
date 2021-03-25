@@ -5,3 +5,11 @@
 
   As this is the younger sister of Mecrisp for MSP430,
   they share their development history and most design ideas.
+
+
+12.06.2013, Matthias Koch, Mecrisp-Stellaris 0.2 experimental:
+
+  - Unicode support
+  - First interrupt handler for Systick-Timer
+  - Lots of small changes
+  - Ledcomm ported

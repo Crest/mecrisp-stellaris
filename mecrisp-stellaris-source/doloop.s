@@ -86,15 +86,15 @@ rlooplimit .req r11
   ldr r1, [r0] @ Die Stelle, wohin er zeigt = Inhalt der Variable Leavepointer
 
   mov r3, psp @ Alter Stackpointer
-  sub psp, #4 @ Ein Element mehr auf dem Stack
+  subs psp, #4 @ Ein Element mehr auf dem Stack
 
 1:@ Lückenschiebeschleife
   ldr r4, [r3]  @ mov @r10, -2(r10)
-  sub r3, #4 
+  subs r3, #4 
   str r4, [r3]
-  add r3, #4
+  adds r3, #4
 
-  add r3, #4
+  adds r3, #4
   cmp r3, r1 @ r1 enthält die Stelle am Ende
   bne 1b 
 
@@ -107,16 +107,16 @@ rlooplimit .req r11
 
   popda r3 @ Die Lückenadresse
 
-  sub r1, #4 @ Weiter in Richtung Spitze des Stacks wandern
+  subs r1, #4 @ Weiter in Richtung Spitze des Stacks wandern
   str r3, [r1] @ Lückenadresse einfügen
 
   @ Den neuen Leavepointer vermerken
   str r1, [r0]
 
-  sub r1, #4   @ Weiter in Richtung Spitze des Stacks wandern
+  subs r1, #4   @ Weiter in Richtung Spitze des Stacks wandern
   ldr r2, [r1] @ Sprungzähler aus dem Stack kopieren
 
-  add r2, #1   @ Den Sprungzähler um eins erhöhen
+  adds r2, #1   @ Den Sprungzähler um eins erhöhen
   str r2, [r1] @ und zurückschreiben.
 
   pop {pc}
@@ -163,14 +163,14 @@ unloop:
 
 
 struktur_plusloop:
-  add rloopindex, #0x80000000  @ Index + $8000
-  sub rloopindex, rlooplimit   @ Index + $8000 - Limit
+  adds rloopindex, #0x80000000  @ Index + $8000
+  subs rloopindex, rlooplimit   @ Index + $8000 - Limit
 
   adds rloopindex, tos         @ Index + $8000 - Limit + Schritt  Hier werden die Flags gesetzt. Überlauf bedeutet: Schleife beenden.
   drop                         @ Runterwerfen, dabei Flags nicht verändern
 
-  add rloopindex, rlooplimit   @ Index + $8000 + Schritt
-  sub rloopindex, #0x80000000  @ Index + Schritt
+  add rloopindex, rlooplimit   @ Index + $8000 + Schritt   Flags nicht verändern !
+  sub rloopindex, #0x80000000  @ Index + Schritt           Flags nicht verändern !
   bx lr
 
 @------------------------------------------------------------------------------
@@ -203,7 +203,7 @@ struktur_plusloop:
   pop {pc}
 
 struktur_loop:
-  add rloopindex, #1          @ Index erhöhen
+  adds rloopindex, #1          @ Index erhöhen
   cmp rloopindex, rlooplimit  @ Mit Limit vergleichen
   bx lr @ Ende für inline,
   
@@ -256,7 +256,7 @@ struktur_do:
 
   @ An diese Stelle nun die Vorwärtssprunglücke einfügen:
   bl branch_v
-  orr tos, #1   @ Markierung anbringen, dass ich mir einen bedingten Sprung wünsche
+  orrs tos, #1   @ Markierung anbringen, dass ich mir einen bedingten Sprung wünsche
 
   pushdaconst 1
   ldr r0, =leavepointer

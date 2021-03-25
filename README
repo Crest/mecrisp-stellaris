@@ -17,7 +17,7 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the first experimental release of Mecrisp-Stellaris,
+This is the second experimental release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
 It runs out of the box on LM4F120H5QR chips.
@@ -46,8 +46,6 @@ https://launchpad.net/gcc-arm-embedded/
 Differences to stable Mecrisp for MSP430 are:
 
 * Experimental code ! Be brave, but expect monsters around the corner.
-
-* Unicode support is postponed for next release.
 
 * Interrupt handling will come soon...
 
@@ -469,7 +467,12 @@ limit index   do ... [one or more leave(s)] ... loop
 ;------------------------------------------------------------------------------
 ; Hardware access
 ;------------------------------------------------------------------------------
-  Coming soon...
+        dint            ( -- ) Disables Interrupts
+        eint            ( -- ) Enables  Interrupts
+        nop             ( -- ) No Operation. Hook for unused IRQs !
 
+        irq-systick     ( -- a-addr ) Memory locations for IRQ-Hooks
+
+  More coming soon...
 
 Matthias Koch, Summer 2013

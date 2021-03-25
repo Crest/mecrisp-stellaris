@@ -39,7 +39,7 @@ digit_base_r4:
   @ Nein: Also ist die Ziffer nicht in den Zahlen 0-9 enthalten gewesen.
   @ Prüfe Buchstaben.
 
-  sub r0, #7    @ Anfang der Großbuchstaben, "A"
+  subs r0, #7    @ Anfang der Großbuchstaben, "A"
   cmp r0, #10   @ Buchstabenwerte beginnen bei 10
   blo 5f        @ --> Zeichen war ein Sonderzeichen zwischen Ziffern und Großbuchstaben.
 
@@ -48,7 +48,7 @@ digit_base_r4:
 
   @ Für den Fall, dass die Ziffer immer noch nicht erkannt ist, probiere es mit den Kleinbuchstaben.
 
-  sub r0, #32   @ Schiebe zum Anfang der Kleinbuchstaben, "A"
+  subs r0, #32   @ Schiebe zum Anfang der Kleinbuchstaben, "A"
   cmp r0, #10   @ Buchstabenwerte beginnen bei 10
   blo 5f        @ --> Zeichen war ein Sonderzeichen zwischen Großbuchstaben und Kleinbuchstaben.
 
@@ -59,7 +59,7 @@ digit_base_r4:
   @ Keine gültige Ziffer.
 
 5: @ Aussprung mit Fehler 
-  mov r0, #0    @ False-Flag
+  movs r0, #0    @ False-Flag
   pushda r0     @ bereitlegen
   pop {r0}
   bx lr
@@ -74,7 +74,7 @@ digit_base_r4:
   bhs 5b
 
   pushda r0
-  mov r0, #-1   @ True-Flag
+  movs r0, #-1   @ True-Flag
   pushda r0     @ bereitlegen
   pop {r0}
   bx lr
@@ -99,13 +99,13 @@ number:
   popda r0 @ Hole die Stringadresse
   ldrb r1, [r0] @ Hole die Länge des Strings
 
-  mov r2, #0  @ Am Anfang noch keine Resultate
+  movs r2, #0  @ Am Anfang noch keine Resultate
 
   @mov r4, #10 @ Base
   ldr r4, =base
   ldr r4, [r4]
   
-  mov r5, #1  @ Positiv oder Negativ ?
+  movs r5, #1  @ Positiv oder Negativ ?
 
 1: @ Sind noch Zeichen da ?
 @  writeln "Schleife"
@@ -114,8 +114,8 @@ number:
 
 @  writeln "Zeichen holen"
   @ Hole ein Zeichen:
-  add r0, #1 @ Pointer weiterrücken
-  sub r1, #1 @ Länge um eins verringern
+  adds r0, #1 @ Pointer weiterrücken
+  subs r1, #1 @ Länge um eins verringern
   ldrb r3, [r0] @ Zeichen holen.
 
 
@@ -165,15 +165,15 @@ number:
 4: @ String ist leer und wurde korrekt umgewandelt.
 
   @ Vorzeichen beachten:
-  mul r2, r2, r5 @ Mit 1 oder -1 malnehmen.
+  muls r2, r2, r5 @ Mit 1 oder -1 malnehmen.
   pushda r2   @ Zahl
 
-  mov r2, #1 @ True, 1 Stackelement von der Zahl belegt
+  movs r2, #1 @ True, 1 Stackelement von der Zahl belegt
   pushda r2
   pop {r0, r1, r2, r3, r4, r5, pc} @ Rücksprung
 
 5: @ Digit mochte das Zeichen nicht.
-  mov r2, #0
+  movs r2, #0
   pushda r2
   pop {r0, r1, r2, r3, r4, r5, pc}
 
@@ -222,24 +222,24 @@ hold: @ ( Zeichen -- )
   bhs 3f                       @ Keine weiteren Zeichen mehr annehmen.  
 
   @ Länge des Puffers um 1 erhöhen
-  add r1, #1
+  adds r1, #1
   strb r1, [r0] @ Aktualisierte Länge schreiben
 
   @ Am Ende anfangen:
-  add r0, r1 @ Zeiger an die freie Stelle für das neue Zeichen
+  adds r0, r1 @ Zeiger an die freie Stelle für das neue Zeichen
 
   @ Ist die Länge jetzt genau 1 Zeichen ? Dann muss ich nichs schieben.
   cmp r1, #1
   beq 2f
 
 1:@ Schiebeschleife:
-  sub r0, #1
+  subs r0, #1
   ldrb r2, [r0] @ Holen an der Stelle-1
-  add r0, #1
+  adds r0, #1
   strb r2, [r0] @ Schreiben an der Stelle
-  sub r0, #1 @ Weiterrücken
+  subs r0, #1 @ Weiterrücken
 
-  sub r1, #1
+  subs r1, #1
   cmp r1, #1 @ Bis nur noch ein Zeichen bleibt. Das ist das Neue.
   bne 1b
 
@@ -330,7 +330,7 @@ zifferstringanfang: @ Eröffnet einen neuen Ziffernstring.
                     @ Normalerweise doppeltgenau, hier nur einfachgenau.
 @------------------------------------------------------------------------------
   ldr r0, =Zahlenpuffer @ Länge löschen, bisherige Länge Null.
-  mov r1, #0
+  movs r1, #0
   strb r1, [r0]
   bx lr  
 

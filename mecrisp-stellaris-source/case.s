@@ -64,14 +64,14 @@ of_inneneinsprung:
 
   bl branch_v @ here 2 allot
   swap
-  add tos, #1 @ Eine Adresse mehr, die abzuarbeiten ist
+  adds tos, #1 @ Eine Adresse mehr, die abzuarbeiten ist
 
   pushdaconst 9 @ Strukturerkennung bereitlegen
 
   pop {lr}
 
 dropkomma:
-  pushdaconst 0xcf40 @ Opcode für ldmia	r7!, {r6}
+  pushdaconstw 0xcf40 @ Opcode für ldmia	r7!, {r6}
   b hkomma
 
 /*
@@ -136,7 +136,7 @@ spruenge_einpflegen:
   
 
   push {r0}
-  and r1, tos, #1 @ Prüfe, ob es ein bedingter Sprung werden soll - ?do benötigt solche.
+  ands r1, tos, #1 @ Prüfe, ob es ein bedingter Sprung werden soll - ?do benötigt solche.
   cmp r1, #0
   beq 3f
      @ writeln "Bedingten Sprung einpflegen"
@@ -149,7 +149,7 @@ spruenge_einpflegen:
 4:
   pop {r0}
 
-  sub r0, #1 @ Ein Sprung weniger übrig
+  subs r0, #1 @ Ein Sprung weniger übrig
   b 1b
 
 2: pop {pc}

@@ -341,7 +341,7 @@ callkommalang: @ ( Zieladresse -- ) Schreibt einen LANGEN Call-Befehl für does>
   @ Schreibe einen ganz langen Sprung ins Dictionary !
 
   push {r0, r1, r2, r3, r4, r5, lr}
-  add tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz, nicht soo wichtig. Müsste das sonst auch in execute einpflegen.
+  adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz, nicht soo wichtig. Müsste das sonst auch in execute einpflegen.
 
   popda r0    @ Zieladresse holen
   mov r4, #0  @ Register r0 wählen
@@ -361,7 +361,7 @@ callkomma:
   @ Schreibe einen ganz langen Sprung ins Dictionary !
 
   push {r0, r1, r2, r3, r4, lr}
-  add tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz, nicht soo wichtig. Müsste das sonst auch in execute einpflegen.
+  adds tos, #1 @ Ungerade Adresse für Thumb-Befehlssatz, nicht soo wichtig. Müsste das sonst auch in execute einpflegen.
 
   pushdaconst 0 @ Register r0
   bl movwmovtkomma
@@ -399,7 +399,7 @@ inlinekomma:
   pushda r1
   bl hkomma @ Opcode einkompilieren
 
-2:add r0, #2 @ Pointer weiterrücken
+2:adds r0, #2 @ Pointer weiterrücken
   b 1b 
 
 3:pop {pc}
@@ -427,7 +427,7 @@ suchedefinitionsende: @ Rückt den Pointer in r0 ans Ende einer Definition vor.
           movw r4, #0x4770 @ bx lr
 
 1:        ldrh r1, [r0] @ Hole die nächsten 16 Bits aus der Routine.
-          add r0, #2    @ Pointer Weiterrücken
+          adds r0, #2    @ Pointer Weiterrücken
 
           cmp r1, r3 @ pop {pc}
           beq 2f
@@ -447,18 +447,13 @@ literalkomma:
 
   @ stmdb psp!, {tos}
 
-  pushdaconst 0xf847
+  pushdaconstw 0xf847
   bl hkomma
-  pushdaconst 0x6d04
+  pushdaconstw 0x6d04
   bl hkomma
 
   pushdaconst 6 @ Gleich in r6=tos legen
   bl movwmovtkomma
-
-/*
-@     dd8:       f849 8d04       str.w   r8, [r9, #-4]!
-@     cf4:	 f847 6d04 	 str.w	r6, [r7, #-4]!
-*/
 
   pop {r0, r1, r2, r3, r4, pc}  
 
@@ -491,17 +486,17 @@ fadenende_einsprungadresse: @ Kleines Helferlein spart Platz
   @ --> Codestartadresse, analog zur Routine in words
 
         @ Flagfeld
-        @add r0, #4
+        @adds r0, #4
 
         @ Link
-        @add r0, #4
-        add r0, #8
+        @adds r0, #4
+        adds r0, #8
 
         ldrb r1, [r0] @ Länge des Strings holen
-        add r1, #1    @ Plus 1 Byte für die Länge
-        and r2, r1, #1 @ Wenn es ungerade ist, noch einen mehr:
-        add r1, r2
-        add r0, r1
+        adds r1, #1    @ Plus 1 Byte für die Länge
+        ands r2, r1, #1 @ Wenn es ungerade ist, noch einen mehr:
+        adds r1, r2
+        adds r0, r1
 
   @ r0 enthält jetzt die Codestartadresse der aktuellen Definition.
   pushda r0
@@ -547,7 +542,7 @@ does: @ Gives freshly defined word a special action.
     @ r_from        ; This makes for the inline R> in definition of defining word !
     @ Die Adresse ist hier nicht auf dem Stack, sondern in LR. LR ist sowas wie "TOS" des Returnstacks.
   pushda lr
-  sub tos, #1 @ Denn es ist normalerweise eine ungerade Adresse wegen des Thumb-Befehlssatzes.
+  subs tos, #1 @ Denn es ist normalerweise eine ungerade Adresse wegen des Thumb-Befehlssatzes.
 
   @ Am Ende des Wortes wird ein pop {pc} stehen, und das kommt prima hin.
   bx lr @ Very important as delimiter as does> itself is inline.
@@ -568,7 +563,7 @@ dodoes:
 
   @ Präpariere die Einsprungadresse, die via callkomma eingefügt werden muss.
   pushda lr   @ Brauche den Link danach nicht mehr, weil ich über die in dem Wort das does> enthält gesicherte Adresse rückspringe
-  sub tos, #1 @ Einen abziehen. Diese Adresse ist schon ungerade für Thumb-2, aber callkomma fügt nochmal eine 1 dazu. 
+  subs tos, #1 @ Einen abziehen. Diese Adresse ist schon ungerade für Thumb-2, aber callkomma fügt nochmal eine 1 dazu. 
 
   @ Dictionarypointer sichern
   ldr r0, =Dictionarypointer
@@ -576,7 +571,7 @@ dodoes:
 
   bl fadenende_einsprungadresse
   popda r1     @ r1 enthält jetzt die Codestartadresse der aktuellen Definition.  
-  add r1, #2   @ Am Anfang sollte das neudefinierte Wort ein push {lr} enthalten, richtig ?
+  adds r1, #2   @ Am Anfang sollte das neudefinierte Wort ein push {lr} enthalten, richtig ?
   str r1, [r0] @ Dictionarypointer umbiegen
 
   @push {r0, r5} Werden in Callkommalamg gesichert.
@@ -776,7 +771,7 @@ builds: ; Beginnt ein Defining-Wort.
   pop {pc}
 
 @ -----------------------------------------------------------------------------
-  Wortbirne Flag_immediate, ";" @ ( -- )
+  Wortbirne Flag_immediate_compileonly, ";" @ ( -- )
 @ -----------------------------------------------------------------------------
   push {lr}
 
@@ -804,7 +799,7 @@ builds: ; Beginnt ein Defining-Wort.
 execute:
 @ -----------------------------------------------------------------------------
   popda r0
-  add r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz
+  adds r0, #1 @ Ungerade Adresse für Thumb-Befehlssatz
   mov pc, r0 
 
 @ -----------------------------------------------------------------------------
@@ -856,7 +851,7 @@ setze_faltbarflag:
   push {lr}
   bl create
   bl literalkomma
-  pushdaconst 0x4770 @ Opcode für bx lr
+  pushdaconstw 0x4770 @ Opcode für bx lr
   bl hkomma
   bl setze_faltbarflag
   bl smudge

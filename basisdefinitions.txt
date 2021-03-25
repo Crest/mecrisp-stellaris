@@ -82,6 +82,13 @@ decimal
   until
 ;
 
+: systick ( ticks -- )
+    $E000E014 ! \ How many ticks between interrupts ?
+  7 $E000E010 ! \ Enable the systick interrupt.
+;
+
+: systick-1Hz ( -- ) 16000000 systick ; \ Tick every second with 16 MHz clock
+
 : cornerstone ( Name ) ( -- )
   <builds begin here $3FF and while 0 h, repeat
   does>   begin dup  $3FF and while 2+   repeat 
@@ -146,6 +153,14 @@ create> romans
 
 : mealsforwholeday cr 25 6 do i dup roman ." : " mealtime cr 2 +loop cr ;
 mealsforwholeday
+
+: tick  ( -- ) ." Tick" cr ;
+
+: clock ( -- ) 
+  ['] tick irq-systick !
+  systick-1Hz
+  eint
+;
 
 cornerstone Rewind-to-Examples
 compiletoram
