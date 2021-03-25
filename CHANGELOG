@@ -95,9 +95,14 @@
   - Partial disassembler for M3/M4 included
   - Small optimisations in core
 
-13.01.2013, Matthias Koch, Mecrisp-Stellaris 0.9.2:
+13.01.2014, Matthias Koch, Mecrisp-Stellaris 0.9.2:
 
   - Small optimisations in M3/M4 code generator
   - Faster interrupt trampolines for M3/M4
   - Timer interrupts for STM32F407
   - Added rdrop and 2rdrop
+
+06.02.2014, Matthias Koch, Mecrisp-Stellaris 0.9.3:
+
+  - Added for convenience: d/ mod f.n
+  - Final testing package for upcoming stable 1.0 release

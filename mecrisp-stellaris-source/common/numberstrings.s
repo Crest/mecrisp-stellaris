@@ -498,7 +498,19 @@ zifferstringanfang: @ Eröffnet einen neuen Ziffernstring.
       @ ( Low High -- )
       @ Prints a s31.32 number
 @------------------------------------------------------------------------------
+  pushdaconst 32
+  b.n fdotn
+
+@------------------------------------------------------------------------------
+  Wortbirne Flag_visible, "f.n"
+      @ ( Low High n -- )
+      @ Prints a s31.32 number with given number of fractional digits
+fdotn:
+@------------------------------------------------------------------------------
   push {lr}
+  push {r4}
+  popda r4
+
   @ ( Low High -- )
   bl tuck @ ( Sign Low High )
   bl dabs @ ( Sign uLow uHigh )
@@ -512,7 +524,11 @@ zifferstringanfang: @ Eröffnet einen neuen Ziffernstring.
   movs tos, #44 @ Add a comma to number buffer ( Sign uL 44 )
   bl zahlanhaengen @ ( Sign uL )
 
-  bl falleziffern @ Processing of fractional parts ( Sign 0 )
+1:bl fziffer   @ Processing of fractional parts ( Sign 0 )
+  subs r4, #1
+  bne 1b
+
+  pop {r4}
   drop
   bl vorzeichen
 
