@@ -1,4 +1,53 @@
 compiletoflash
+$40064000 constant MCG_C1
+$40064001 constant MCG_C2
+$40064002 constant MCG_C3
+$40064003 constant MCG_C4
+$40064004 constant MCG_C5
+$40064005 constant MCG_C6
+$40064006 constant MCG_S
+$40064008 constant MCG_SC
+$40065000 constant OSC_CR
+$40048044 constant SIM_CLKDIV1
+$40048048 constant SIM_CLKDIV2
+$40048034 constant SIM_SCGC4
+$40048004 constant SIM_SOPT2
+: mcg-osc-ready? 2 MCG_S cbit@ ; 
+: mcg-extref-refclock? $10 MCG_S cbit@ not ;
+: mcg-extref-outclk? MCG_S c@ $0C and $8 = ;
+: mcg-pll-lock? 64 MCG_S cbit@ ;
+: mcg-pll-use-crystal? 32 MCG_S cbit@ ;
+: MCG_96MHz ( -- ) 
+10 OSC_CR c! 
+$24 MCG_C2 c!
+2 6 lshift 4 3 lshift + MCG_C1 C!
+begin mcg-osc-ready? until 
+begin mcg-extref-refclock? until
+begin mcg-extref-outclk? until 
+3 MCG_C5 c! 
+1 6 lshift MCG_C6 c! 
+begin mcg-pll-use-crystal? until
+begin mcg-pll-lock? until 
+$01030000 SIM_CLKDIV1 !
+4 3 lshift MCG_C1 C! 
+begin MCG_S c@ $0C and $0C = until 
+;
+$4006A000 constant UART0_BASE
+$4006A015 constant UART0_RWFIFO
+: UART_96MHz_115200 ( -- )
+ 0 UART0_BASE c!
+ 52 [ UART0_BASE 1 + literal, ] c!
+ 3 [ UART0_BASE $A + literal, ] c!
+;
+: USB_96MHz_48MHZ ( -- )
+ 2 SIM_CLKDIV2 !
+ $510C0 SIM_SOPT2 !
+;
+: fullspeed 0 uart0_rwfifo c! MCG_96MHz UART_96MHz_115200 6 uart0_rwfifo c! ;
+fullspeed
+\ Add a comment line ... it often gets garbled when the uart clock changes
+: init fullspeed CR ." Running at 96MHz" CR ;
+init
 : .fault ipsr ." Unhandled fault #" . CR ;
 ' .fault irq-fault !
 : irq-enable-mask-offset ( IRQ -- mask offset)
@@ -38,6 +87,8 @@ $4006A013 constant UART0_TWFIFO
 $4006A014 constant UART0_TCFIFO
 $4006A015 constant UART0_RWFIFO
 $4006A016 constant UART0_RCFIFO
+%00001100 constant UART0_RETE
+%00000100 constant UART0_RE
 : uart0e-status ( -- )
  UART0_S1 c@
  dup $08 and 0<> if ." Receiver overrun error" CR then
@@ -66,6 +117,11 @@ $4006A016 constant UART0_RCFIFO
  uart0e-status
  uart0e-clear
 ;
+: uart0-disable ( -- ) UART0_RETE UART0_C2 cbic! ;
+: uart0-enable ( -- ) UART0_RETE UART0_C2 cbis! ;
+: uart0-re-disable ( -- ) UART0_RE UART0_C2 cbic! ;
+: uart0-re-enable ( -- ) UART0_RE UART0_C2 cbis! ;
+: uart0-fifo-size-set ( n -- ) uart0-re-disable uart0_rwfifo c! uart0-re-enable ;
 ' uart0e-isr irq-uart0e !
 uart0e-eint
 $400FF000 constant GPIOA_PDOR 
@@ -207,17 +263,12 @@ $E000E018 constant NVIC_ST_CURRENT_R
  ['] .fault irq-fault !
  ['] uart0e-isr irq-uart0e !
  uart0e-eint
- ['] prompt hook-quit !
- ." Running at 96MHz" CR ." XON/XOFF enabled" CR 
+ ." Running at 96MHz" CR 
  cr
  Buddha
  cr
  ." An idea that is developed and put into action is more important"
  CR ." than an idea that exists only as an idea. " CR
-;
-: dictionarynext ( address -- address flag )
- @ dup $FFFFFFFF = 
- if -1 else dup 6 + c@ $FF = then
 ;
 : list ( -- )
  cr
@@ -543,4 +594,10 @@ drop
  ' disasm-$ !
  seec
 ;
+0 constant [struct 
+: field 
+ <builds over , + 
+ does> @ + 
+;
+: struct] ( offset -- ) ( -- size ) constant ;
 compiletoram
