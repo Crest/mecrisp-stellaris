@@ -17,11 +17,12 @@
 @
 
 ;------------------------------------------------------------------------------
-This is the seventh release of Mecrisp-Stellaris,
+This is the eight release of Mecrisp-Stellaris,
 a port of Mecrisp to the ARM Cortex M architecture.
 
 It runs out of the box on:
   - TI Stellaris Launchpad       with LM4F120H5QR
+  - STM VL Discovery             with STM32F100RB
   - STM F4 Discovery             with STM32F407VGT6 
   - Freescale Freedom FRDM-KL25Z with KL25Z128VLK4
 
@@ -42,9 +43,11 @@ inlining of short words.
 
 Communication is via serial 115200 baud 8N1 over
   - UART0  in LM4F120  (connected to USB-serial bridge on Stellaris Launchpad)
+  - USART1 in STM32F1  (TX on PA9, RX on PA10)
   - USART2 in STM32F4  (TX on PA2, RX on PA3)
   - UART0  in KL25Z128 (connected to USB-serial bridge on Freedom board)
   - UART5  in LM4F232
+
 
 Hardware and configuration for LM4F120:
   Connect your cable to the Debug-USB-Port, 
@@ -68,10 +71,23 @@ Hardware and configuration for STM32F4:
   Flash memory is mirrored in hardware starting from address 0. Mecrisp uses
   the low address range to generate short opcodes for calling core words, but
   for flashing the binary, you have to use the "true address" $08000000.
+  st-flash erase
   st-flash write mecrisp-stellaris-stm32f4.bin 0x08000000
 
   On startup, this runs with external 8 MHz crystal HSE clock,
   as internal oscillator is specified -8% + 4.5% over whole temp range.
+
+Hardware and configuration for STM32F1:
+  Similiar to STM32F4.
+
+  Connect USB cable to ST-Link USB port,
+  connect your favourite serial link to PA9 (TX) and PA10 (RX),
+  keep logic voltage levels in mind !
+
+  st-flash erase
+  st-flash write mecrisp-stellaris-stm32f1.bin 0x08000000
+
+  On startup, this runs with internal 8 MHz HSI clock.
 
 Hardware and configuration for KL25Z128:
   Connect USB cable to SDA-USB-PORT
@@ -614,6 +630,32 @@ Interrupts:
         irq-adc0seq1
         irq-adc0seq2
         irq-adc0seq3
+
+  Look into vectors.s and interrupts.s to add more interrupts.
+
+;------------------------------------------------------------------------------
+; Specials for STM32F1:
+;------------------------------------------------------------------------------
+
+Flash:
+        eraseflash      ( -- ) Erases everything. Clears Ram. Restarts Forth.
+
+        eraseflashfrom  ( a-addr -- ) Starts erasing at this address.
+                                      Clears Ram. Restarts Forth.
+
+        flashpageerase  ( a-addr -- ) Erase one 1k flash page only. Take care:
+                                      No Reset, no dictionary reinitialisation.
+
+        hflash!         ( u|n a-addr -- )   Writes halfword to flash
+
+Interrupts:
+
+        irq-adc         ( -- a-addr ) Memory locations for IRQ-Hooks
+        irq-exti4
+        irq-exti3
+        irq-exti2
+        irq-exti1
+        irq-exti0
 
   Look into vectors.s and interrupts.s to add more interrupts.
   

@@ -79,3 +79,7 @@
 
   - Deep changes in core: Opcodings !
     They generate faster code for all targets.
+
+28.11.2013, Matthias Koch, Mecrisp-Stellaris 0.8.1:
+
+  - New target: STM32F100 on STM VL Discovery board
