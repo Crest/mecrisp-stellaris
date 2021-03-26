@@ -392,7 +392,13 @@
   - Contribution by Ulrich Hoffman:
       Examples for syscall usage in ARM Linux
 
-15.10.2015, Matthias Koch, Mecrisp-Stellaris 2.1.5
+11.10.2015, Matthias Koch, Mecrisp-Stellaris 2.2.0 & RA 0.6 experimental 
 
-  - Contribution by Абдрахимов Илья:
-      New target: STM L152 Discovery
+  - Merged the experimental RA branch with the mainstream package
+  
+  Changes to the mainstream release are:
+
+  - Replaced align, with halign
+  - Removed align4, as it has been identical with align
+  - Improved maintainability of the code
+  - Small improvements under the hood here and there
