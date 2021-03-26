@@ -954,11 +954,15 @@ f_star: @ Signed multiply s31.32
   bx lr
 
 @------------------------------------------------------------------------------
-  Wortbirne Flag_foldable_2|Flag_inline, "d0=" @ ( 1L 1H -- Flag )
+  Wortbirne Flag_foldable_2, "d0=" @ ( 1L 1H -- Flag )
 @------------------------------------------------------------------------------
   ldm psp!, {r0}
-  orrs tos, r0
-  subs tos, #1
+  cmp r0, #0
+  beq 1f
+    movs tos, #0
+    bx lr
+
+1:subs tos, #1
   sbcs tos, tos
   bx lr
 
@@ -967,27 +971,28 @@ f_star: @ Signed multiply s31.32
 @------------------------------------------------------------------------------
   ldm psp!, {r0, r1, r2}
 
-  eors r0, r2
-  eors tos, r1
-  orrs tos, r0
+  cmp r0, r2
+  bne 1f
 
-  subs tos, #1
-  sbcs tos, tos
+  subs tos, r1        @ Z=equality; if equal, TOS=0
+  beq 2f
+
+1:movs tos, #0
   mvns tos, tos
-
-  bx lr
+2:bx lr
 
 @------------------------------------------------------------------------------
   Wortbirne Flag_foldable_4, "d=" @ ( 1L 1H 2L 2H -- Flag )
 @------------------------------------------------------------------------------
   ldm psp!, {r0, r1, r2}
 
-  eors r0, r2
-  eors tos, r1
-  orrs tos, r0
+  cmp r0, r2
+  beq 1f
+    movs tos, #0
+    bx lr
 
-  subs tos, #1
+1:subs tos, r1       @ Z=equality; if equal, TOS=0
+  subs tos, #1      @ Wenn es Null war, gibt es jetzt einen Überlauf
   sbcs tos, tos
-
   bx lr
 

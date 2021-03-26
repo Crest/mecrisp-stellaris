@@ -42,50 +42,6 @@ ramallot ZweitFadenende, 4
 ramallot FlashFlags, 4
 ramallot VariablenPointer, 4
 
-.ifdef registerallocator
-
-@ Variablen für den Registerallokator
-
-ramallot state_tos, 4
-ramallot constant_tos, 4
-
-ramallot state_nos, 4
-ramallot constant_nos, 4
-
-ramallot state_3os, 4
-ramallot constant_3os, 4
-
-ramallot state_4os, 4
-ramallot constant_4os, 4
-
-ramallot state_5os, 4
-ramallot constant_5os, 4
-
-ramallot sprungtrampolin, 4
-
-ramallot state_r0, 4
-ramallot constant_r0, 4
-
-.equ allocator_base, state_tos
-
-.equ offset_state_tos,    0 * 4
-.equ offset_constant_tos, 1 * 4
-.equ offset_state_nos,    2 * 4
-.equ offset_constant_nos, 3 * 4
-.equ offset_state_3os,    4 * 4
-.equ offset_constant_3os, 5 * 4
-.equ offset_state_4os,    6 * 4
-.equ offset_constant_4os, 7 * 4
-.equ offset_state_5os,    8 * 4
-.equ offset_constant_5os, 9 * 4
-
-.equ offset_sprungtrampolin, 10 * 4
-
-.equ offset_state_r0,    11 * 4
-.equ offset_constant_r0, 12 * 4
-
-.endif
-
 @ Jetzt kommen Puffer und Stacks:  Buffers and Stacks
 
 .equ Zahlenpufferlaenge, 63 @ Zahlenpufferlänge+1 sollte durch 4 teilbar sein !      Number buffer (Length+1 mod 4 = 0)
@@ -128,7 +84,7 @@ ramallot returnstackanfang, 0
 @ Preparations for dictionary structure
 @ -----------------------------------------------------------------------------
 
-CoreDictionaryAnfang: @ Dictionary-Einsprungpunkt setzen
+CoreDictionaryAnfang: @ Dictionary-Einsprungpunkt setzen 
                       @ Set entry point for Dictionary
 
 .set CoreVariablenPointer, RamDictionaryEnde @ Im Flash definierte Variablen kommen ans RAM-Ende
@@ -140,103 +96,48 @@ CoreDictionaryAnfang: @ Dictionary-Einsprungpunkt setzen
 @ Include the complete Mecrisp-Stellaris core
 @ -----------------------------------------------------------------------------
 
-  .ifdef registerallocator
-  .include "../common/ra/ra-infrastructure.s"
-  .include "../common/ra/ra-tools.s"
-  .ltorg
-
-  .include "../common/ra/double.s"
-  .include "../common/ra/stackjugglers.s"
-  .include "../common/ra/logic.s"
-  .include "../common/ra/ra-logic.s"
-  .include "../common/ra/comparisions.s"
-  .ltorg
-  .include "../common/ra/memory.s"
-  .include "flash.s"
-  .ltorg
-
-  .ifdef emulated16bitflashwrites
-  .include "../common/hflashstoreemulation.s"
-  .ltorg
-  .endif
-
-  .ifdef flash16bytesblockwrite
-  .include "../common/flash16bytesblockwrite.s"
-  .ltorg
-  .endif
-
-  .include "../common/ra/calculations.s"
-  .include "terminal.s"
-  .include "../common/query.s"
-  .ltorg
-  .include "../common/strings.s"
-  .include "../common/deepinsight.s"
-  .ltorg
-  .include "../common/compiler.s"
-  .include "../common/compiler-flash.s"
-  .ltorg 
-  .include "../common/ra/controlstructures.s"
-  .ltorg
-  .include "../common/ra/doloop.s"
-  .include "../common/ra/case.s"
-  .include "../common/token.s"
-  .ltorg
-  .include "../common/numberstrings.s"
-  .ltorg
-  .include "../common/ra/interpreter.s"
-  .ltorg
-
-  .ifndef within_os
-  .include "../common/interrupts-common.s"
-  .include "interrupts.s" @ You have to change interrupt handlers for Porting !
-  .endif
-
-  .else
-
   .include "../common/double.s"
-  .include "../common/stackjugglers.s"
+  .include "../common/stackjugglers.s" 
   .include "../common/logic.s"
   .include "../common/comparisions.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/memory.s"
   .include "flash.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
 
   .ifdef emulated16bitflashwrites
   .include "../common/hflashstoreemulation.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
   .endif
 
   .ifdef flash16bytesblockwrite
   .include "../common/flash16bytesblockwrite.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
   .endif
-
+  
   .include "../common/calculations.s"
   .include "terminal.s"
   .include "../common/query.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/strings.s"
   .include "../common/deepinsight.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/compiler.s"
   .include "../common/compiler-flash.s"
   .include "../common/controlstructures.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/doloop.s"
   .include "../common/case.s"
   .include "../common/token.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/numberstrings.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
   .include "../common/interpreter.s"
-  .ltorg
+  .ltorg @ Mal wieder Konstanten schreiben
 
   .ifndef within_os
   .include "../common/interrupts-common.s"
   .include "interrupts.s" @ You have to change interrupt handlers for Porting !
-  .endif
-
   .endif
 
 @ -----------------------------------------------------------------------------
