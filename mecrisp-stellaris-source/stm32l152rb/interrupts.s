@@ -24,34 +24,15 @@
 @ All interrupt handlers work the same way and are generated with a macro:
 @------------------------------------------------------------------------------
 
-interrupt terminal
-interrupt porta
-interrupt portb
-interrupt portc
-interrupt portd
-interrupt porte
-interrupt portf
-interrupt portg
-interrupt porth
-interrupt portj
-interrupt portk
-interrupt portl
-interrupt adc0seq0
-interrupt adc0seq1
-interrupt adc0seq2
-interrupt adc0seq3
-interrupt adc1seq0
-interrupt adc1seq1
-interrupt adc1seq2
-interrupt adc1seq3
-interrupt timer0a
-interrupt timer0b
-interrupt timer1a
-interrupt timer1b
-interrupt timer2a
-interrupt timer2b
-interrupt timer3a
-interrupt timer3b
-interrupt ethernet
+interrupt exti0
+interrupt exti1
+interrupt exti2
+interrupt exti3
+interrupt exti4
+interrupt adc
+interrupt dac
+interrupt tim2
+interrupt tim3
+interrupt tim4
 
 @------------------------------------------------------------------------------

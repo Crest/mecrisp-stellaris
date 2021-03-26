@@ -17,15 +17,16 @@
 @
 
 .syntax unified
-.cpu cortex-m4
+.cpu cortex-m3
 .thumb
 
 @ -----------------------------------------------------------------------------
 @ Swiches for capabilities of this chip
 @ -----------------------------------------------------------------------------
 
-.equ charkommaavailable, 1
-.equ registerallocator, 1
+.equ erasedflashcontainszero, 1
+.equ emulated16bitflashwrites, 1
+@ Not available: .equ charkommaavailable, 1
 
 @ -----------------------------------------------------------------------------
 @ Start with some essential macro definitions
@@ -41,13 +42,13 @@
 @ Konstanten für die Größe des Ram-Speichers
 
 .equ RamAnfang, 0x20000000 @ Start of RAM          Porting: Change this !
-.equ RamEnde,   0x20040000 @ End   of RAM. 256 kb. Porting: Change this !
+.equ RamEnde,   0x20004000 @ End   of RAM.  16 kb. Porting: Change this !
 
 @ Konstanten für die Größe und Aufteilung des Flash-Speichers
 
-.equ Kernschutzadresse,     0x00008000 @ Darunter wird niemals etwas geschrieben ! Mecrisp core never writes flash below this address.
-.equ FlashDictionaryAnfang, 0x00008000 @ 32 kb für den Kern reserviert...           32 kb Flash reserved for core.
-.equ FlashDictionaryEnde,   0x00100000 @ 992 kb Platz für das Flash-Dictionary     992 kb Flash available. Porting: Change this !
+.equ Kernschutzadresse,     0x00004000 @ Darunter wird niemals etwas geschrieben ! Mecrisp core never writes flash below this address.
+.equ FlashDictionaryAnfang, 0x00004000 @ 16 kb für den Kern reserviert...           16 kb Flash reserved for core.
+.equ FlashDictionaryEnde,   0x00020000 @ 128 kb Platz für das Flash-Dictionary     128 kb Flash available. Porting: Change this !
 .equ Backlinkgrenze,        RamAnfang  @ Ab dem Ram-Start.
 
 
@@ -74,7 +75,7 @@ Reset: @ Einsprung zu Beginn
    @ Catch the pointers for Flash dictionary
    .include "../common/catchflashpointers.s"
 
-   welcome " for TM4C1294 by Matthias Koch"
+   welcome " for STM32L152RB by Matthias Koch"
 
    @ Ready to fly !
    .include "../common/boot.s"

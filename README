@@ -44,6 +44,7 @@ Contributions:
   - Teensy 3.1                   with MK20DX256VLH7
   - Chinese QF-LM4F232           with LM4F232H5QC
   - nRFgo Starter Kit            with nRF51822
+  - STM L152 Discovery           with STM32L152RBT6
 
 http://mecrisp.sourceforge.net/
 
@@ -412,7 +413,7 @@ real applications, go with at least of 32 kb flash and 4 kb RAM.
 Look at the flash specification for your particular chip.
 
 The compiler only depends on 2-aligned 16-Bit flash writes
-one time per location, you can remove c, and halign without issues 
+one time per location, you can remove c, and align, without issues 
 from the compiler, but 8-Bit flash writes are nice to have 
 for compatibility with standard code. 
 
@@ -896,7 +897,8 @@ Deep insights:
     Available depending on chip capabilities:
 
         c,              ( char -- ) Appends a byte to dictionary
-        halign          ( -- ) Makes Dictionary Pointer even, if uneven.
+        align,          ( -- ) Makes Dictionary Pointer even, if uneven.
+        align4,         ( -- ) Aligns on 4.
 
         movwmovt,       ( x Register -- ) Generate a movw/movt-Sequence to
                                           get x into any given Register. M3/M4 only
