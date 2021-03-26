@@ -29,11 +29,14 @@
   sbcs tos, tos
   bx lr
 
-allocator_equal_zero:
+@ allocator_equal_zero:
     push {lr}
+      bl prepare_single_compare @ Beinhaltet expect_one_element.
       bl allocator_one_minus
-      pushdaconstw 0x4180 @ sbcs r0, r0, #0
-      bl smalltworegisters
+      bl eliminiere_tos
+
+      ldr r1, =0xD200
+      str r1, [r0, #offset_sprungtrampolin] @ Daraus wird später der sbcs-Opcode zusammengesetzt, falls nötig.
     pop {pc}
 
 @ -----------------------------------------------------------------------------
@@ -46,8 +49,12 @@ allocator_equal_zero:
 
 allocator_unequal_zero:
     push {lr}
-      bl allocator_equal_zero
-      bl allocator_not
+      bl prepare_single_compare @ Beinhaltet expect_one_element.
+      bl allocator_one_minus
+      bl eliminiere_tos
+
+      ldr r1, =0xD300
+      str r1, [r0, #offset_sprungtrampolin] @ Daraus wird später die sbcs/mvns-Opcodesequenz zusammengesetzt, falls nötig.
     pop {pc}
 
 @ -----------------------------------------------------------------------------
@@ -57,9 +64,17 @@ allocator_unequal_zero:
   bx lr
 
     push {lr}
+      bl prepare_single_compare @ Beinhaltet expect_one_element.
+
       pushdaconstw 0x17C0 @ asrs r0, r0, #31
-      bl smalltworegisters
+      bl chsmallplusminus
+
+      ldr r1, =0xD500
+      str r1, [r0, #offset_sprungtrampolin] @ Daraus wird später die sbcs/mvns-Opcodesequenz zusammengesetzt, falls nötig.
     pop {pc}
+
+@ Wenn TOS Konstante ist, werden die 0-Vergleiche sowieso gefaltet.
+@ Also ist TOS ohnehin ein Register.
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_allocator, ">=" @ ( x1 x2 -- ? ) @ Meins
@@ -257,6 +272,56 @@ allocator_unequal_zero:
  .ltorg
 
 @ -----------------------------------------------------------------------------
+prepare_single_compare:
+@ -----------------------------------------------------------------------------
+  push {lr}
+  bl expect_one_element
+
+  @ Es gibt maximal drei Elemente im RA. Eins wird am Ende rausfliegen.
+  @ Falls die beiden anderen Elemente also Konstanten sind, müssen sie jetzt generiert werden.
+
+
+    ldr r3, [r0, #offset_state_3os]
+    cmp r3, #constant
+    bne 6f
+
+      @ 3OS ist eine Konstante. Packe sie jetzt und sofort in einen Register !
+      bl get_free_register
+      str r3, [r0, #offset_state_3os] @ Setze den neuen Register von 3OS
+
+      @ Ist sie schon in r0 oder r1 ? Dann übernehmen ! ***********************************************************************************************
+      @ Hier erstmal zum Ausprobieren radikal frisch in den Register hineingenerieren.
+
+      pushdatos
+      ldr tos, [r0, #offset_constant_3os] @ Hole die Konstante
+      pushda r3 @ Zielregister
+      bl registerliteralkomma
+
+6:  @ 3OS ist unschädlich/unschädlich gemacht worden.
+
+
+
+    ldr r3, [r0, #offset_state_nos]
+    cmp r3, #constant
+    bne 6f
+
+      @ 3OS ist eine Konstante. Packe sie jetzt und sofort in einen Register !
+      bl get_free_register
+      str r3, [r0, #offset_state_nos] @ Setze den neuen Register von 3OS
+
+      @ Ist sie schon in r0 oder r1 ? Dann übernehmen ! ***********************************************************************************************
+      @ Hier erstmal zum Ausprobieren radikal frisch in den Register hineingenerieren.
+
+      pushdatos
+      ldr tos, [r0, #offset_constant_nos] @ Hole die Konstante
+      pushda r3 @ Zielregister
+      bl registerliteralkomma
+
+6:  @ 3OS ist unschädlich/unschädlich gemacht worden.
+
+  pop {pc}
+
+@ -----------------------------------------------------------------------------
 prepare_compare:
 @ -----------------------------------------------------------------------------
 
@@ -354,19 +419,50 @@ sprungschreiber_flaggenerator:
 
       pushdatos
       ldr tos, [r0, #offset_sprungtrampolin]
-      adds tos, #2 @ Flaggenerator_inverted benötigt einen Sprung drei Befehle weiter
         movs r1, #0
         str r1, [r0, #offset_sprungtrampolin]
 
     @ ( Sprungopcode -- )
     @ Kümmere mich um das Ergebnis !
 
+    @ In diesen neuen Register muss ich nun abhängig von den Flags einen Wert generieren.
+
+      @ Im Falle des Carry-Flags gibt es einen kürzeren Weg, ein Flag zusammenzubauen:
+      lsrs r1, tos, #8 @ Sprungopcode so schieben, dass ich bequem vergleichen kann
+@      pushda r1
+@      bl hexdot
+
+      cmp r1, #0xD5 @ Opcode bpl - der Minussprung. Er wird ausschließlich von 0< generiert.
+      bne 2f
+        @ Die Besonderheit: Dieses Flag ist schon fertig in einem Register. Muss nichts tun.
+        drop
+        pop {r0, r1, r2, r3, pc}
+2:
+
+    @ Alle anderen Fälle benötigen einen neuen Register, in dem das Flag generiert werden kann.
     bl befreie_tos
     bl get_free_register
     str r3, [r0, #offset_state_tos]
 
-    @ In diesen neuen Register muss ich nun abhängig von den Flags einen Wert generieren.
 
+      cmp r1, #0xD2
+      bne 2f
+        ldr tos, =0x4180 @ sbcs r0, r0, #0
+        bl smalltworegisters
+        pop {r0, r1, r2, r3, pc}
+2:
+
+      cmp r1, #0xD3
+      bne 2f
+        ldr tos, =0x4180 @ sbcs r0, r0, #0
+        bl smalltworegisters
+        bl allocator_not
+        pop {r0, r1, r2, r3, pc}
+2:
+
+    @ Dies ist der "normale" Flaggenerator, der immer und bei allen Flagkombinationen funktioniert.
+
+    adds tos, #2 @ Flaggenerator_inverted benötigt einen Sprung drei Befehle weiter
     @ Bedingten Sprung schreiben, um Flag zu generieren
     bl hkomma
 
@@ -380,6 +476,26 @@ sprungschreiber_flaggenerator:
     bl smallplusminus
 
 1:pop {r0, r1, r2, r3, pc}
+
+smallplusminus:
+    push {lr}
+    bl expect_one_element @ Da nicht gefaltet worden ist, muss es sich um einen Register handeln.
+    bl make_tos_changeable
+    ldr r1, [r0, #offset_state_tos]
+    lsls r1, #8
+    orrs tos, r1
+    bl hkomma
+    pop {pc}
+
+eliminiere_tos_wenn_bmi: @ Dies wird vor dem Einpflegen der Sprünge in eine Konstrollstruktur aufgerufen.
+  push {lr}              @ 0< hat die Besonderheit, einen Forth-Flag in ein Register zu legen. Dieser muss entfernt werden, wenn der Sprungopcode benutzt wird.
+
+    ldr r1, [r0, #offset_sprungtrampolin]
+    lsrs r1, r1, #8
+    cmp r1, #0xD5 @ BMI Opcode
+    bne 1f
+      bl eliminiere_tos
+1:pop {pc}
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_2|Flag_inline, "min" @ ( x1 x2 -- x3 )

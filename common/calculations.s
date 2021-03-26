@@ -138,26 +138,27 @@ plus_allocator:
   bx lr
 
 allocator_one_minus:
-    pushdaconstw 0x3801
+    pushdaconstw 0x1E00 + 1<<6
 
-smallplusminus:
+chsmallplusminus:
     push {lr}
     bl expect_one_element @ Da nicht gefaltet worden ist, muss es sich um einen Register handeln.
-    bl make_tos_changeable
+
     ldr r1, [r0, #offset_state_tos]
-    lsls r1, #8
+    lsls r1, #3
     orrs tos, r1
+
+    @ Registerwechsel direkt im Opcode. Nutze das natürlich aus :-) Spare mir damit eventuelle Elementkopien.
+    bl eliminiere_tos
+
+    bl befreie_tos
+    bl get_free_register
+    str r3, [r0, #offset_state_tos]
+
+    orrs tos, r3  @ Der Endzielregister ist gar nicht geschoben
     bl hkomma
+
     pop {pc}
-
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_foldable_1|Flag_inline|Flag_allocator, "cell+" @ ( x -- x+4 )
-@ -----------------------------------------------------------------------------
-  adds tos, #4
-  bx lr
-
-    pushdaconstw 0x3004
-    b.n smallplusminus
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline|Flag_allocator, "1+" @ ( u -- u+1 )
@@ -166,8 +167,8 @@ smallplusminus:
   adds tos, #1
   bx lr
 
-    pushdaconstw 0x3001
-    b.n smallplusminus
+    pushdaconstw 0x1C00 + 1<<6
+    b.n chsmallplusminus
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline|Flag_allocator, "2-" @ ( u -- u-1 )
@@ -176,8 +177,8 @@ smallplusminus:
   subs tos, #2
   bx lr
 
-    pushdaconstw 0x3802
-    b.n smallplusminus
+    pushdaconstw 0x1E00 + 2<<6
+    b.n chsmallplusminus
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline|Flag_allocator, "2+" @ ( u -- u+1 )
@@ -186,8 +187,17 @@ smallplusminus:
   adds tos, #2
   bx lr
 
-    pushdaconstw 0x3002
-    b.n smallplusminus
+    pushdaconstw 0x1C00 + 2<<6
+    b.n chsmallplusminus
+
+@ -----------------------------------------------------------------------------
+  Wortbirne Flag_foldable_1|Flag_inline|Flag_allocator, "cell+" @ ( x -- x+4 )
+@ -----------------------------------------------------------------------------
+  adds tos, #4
+  bx lr
+
+    pushdaconstw 0x1C00 + 4<<6
+    b.n chsmallplusminus
 
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_foldable_1|Flag_inline, "negate" @ ( n1 -- -n1 )

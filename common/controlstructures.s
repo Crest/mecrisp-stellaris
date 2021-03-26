@@ -293,6 +293,8 @@ struktur_if: @ ( -- Adresse-für-Sprung Opcode 2 )
 struktur_if_allokator:
   push {lr} @ Spezialeinsprung des Registerallokators:
 
+  bl eliminiere_tos_wenn_bmi
+
   ldr r1, [r0, #offset_sprungtrampolin]
   cmp r1, #0
   beq 1f
@@ -449,6 +451,8 @@ strukturen_passen_nicht:
   drop
 
   push {lr}
+  bl eliminiere_tos_wenn_bmi
+  
   ldr r1, [r0, #offset_sprungtrampolin]
   cmp r1, #0
   beq 1f
