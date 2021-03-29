@@ -90,7 +90,7 @@ ramallot inline_cache_count, 4
 
 
 .equ rawinlinelength, 10 @ How many opcodes long may definitions be for direct inlining ?
-.equ inline_cache_length, 5 @ For optimisation across inlined definitions, how many compilation steps should be buffered at most ?
+.equ inline_cache_length, 6 @ For optimisation across inlined definitions, how many compilation steps should be buffered at most ?
 
 ramallot inline_cache, 6 * inline_cache_length
 
