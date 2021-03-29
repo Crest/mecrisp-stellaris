@@ -35,6 +35,7 @@ It runs out of the box on:
   - STM F4 Discovery             with STM32F407VGT6 
   - STM F429 Discovery           with STM32F429ZIT6
   - Freescale Freedom FRDM-KL25Z with KL25Z128VLK4
+  - Infineon XMC2GO              with XMC1100Q024F0064
   
   - Breadboard friendly, DIP packaged LPC1114FN28
   -                                   LPC1115FBD48
@@ -323,6 +324,32 @@ Hardware and configuration for KL25Z128:
   Freescale Freedom binary images. Go into kl25z128/thumbulator 
   directory, type "make", copy the binary and then type 
   "thumbulator mecrisp-stellaris-kl25z128.bin" to run.
+
+;------------------------------------------------------------------------------
+Hardware and configuration for XMC1100:
+;------------------------------------------------------------------------------
+  Connect USB cable for flashing and terminal.
+
+  Flashing is possible with JLinkExe from Segger, which is available for Linux:
+  https://www.segger.com/jlink-software.html
+  "Software and documentation pack", 32 Bit TGZ archive is fine.
+  
+  JLink_Linux_V510c_i386# ./JLinkExe -device XMC1100-0064 -if SWD -speed 4000
+    erase
+    loadfile mecrisp-stellaris-xmc1100.hex
+    r
+    g
+      
+  OpenOCD 0.9 has support for the XMC2GO, but it failed with the firmware version
+  of my board. The command line would be something like this:
+
+  openocd -f board/xmc-2go.cfg
+  openocd -f board/xmc-2go.cfg -c "program mecrisp-stellaris-xmc1100.hex verify reset exit"
+
+  If you have issues with broken characters in the terminal,
+  try changing the UART_FDR_STEP value in terminal.s a bit.
+
+  On startup, this runs with internal MCLK = PCKL = 8 MHz clock.
 
 ;------------------------------------------------------------------------------
 Hardware and configuration for MK20DX256VLH7 on a Teensy 3.1 board:
@@ -1492,6 +1519,47 @@ Interrupts:
         irq-portd
 
   Look into vectors.s and interrupts.s to add more interrupts.
+
+;------------------------------------------------------------------------------
+; Specials for XMC1100:
+;------------------------------------------------------------------------------
+
+Flash:
+        eraseflash      ( -- ) Erases everything. Clears Ram. Restarts Forth.
+
+        eraseflashfrom  ( a-addr -- ) Starts erasing at this address.
+                                      Clears Ram. Restarts Forth.
+
+        flashpageerase  ( a-addr -- ) Erase one 256 byte flash page only.
+                                      No Reset, no dictionary reinitialisation.
+
+        initflash       ( -- ) Clear buffers
+        hflash!         ( u|n a-addr -- ) Writes halfword to flash (buffered)
+        flushflash      ( -- ) Flush flash buffers
+                                 needed if you comma in values after create
+
+        16flash!        ( x1 x2 x3 x4 addr -- ) Flash aligned 16 Bytes at once
+
+Interrupts:
+
+        irq-scu0        ( -- a-addr ) Memory locations for IRQ-Hooks
+        irq-scu1
+        irq-eru0
+        irq-eru1
+        irq-eru2
+        irq-eru3
+        irq-usi0
+        irq-usi1
+        irq-usi2
+        irq-usi3
+        irq-usi4
+        irq-usi5
+        irq-adc0
+        irq-adc1
+        irq-ccu0
+        irq-ccu1
+        irq-ccu2
+        irq-ccu3
 
 ;------------------------------------------------------------------------------
 ; Specials for MK20DX256:

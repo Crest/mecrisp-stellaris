@@ -438,3 +438,9 @@
   - RTC examples for STM L152 Discovery by Абдрахимов Илья (Ilya Abdrahimov)
   - Contribution by Jean Jonethal:
       New target: STM L476 Discovery
+
+28.11.2015, Matthias Koch, Mecrisp-Stellaris RA 1.5a
+
+  - Added fast integer square root
+  - More examples for STM L152 Discovery by Абдрахимов Илья (Ilya Abdrahimov)
+  - Experimental new target: XMC1100 on Infineon XMC2GO board
