@@ -6,11 +6,19 @@ cd lpc1114fn28
 md5sum *.bin
 cd ..
 
+cd lpc1114fn28-ra
+md5sum *.bin
+cd ..
+
 cd lpc1115fbd48
 md5sum *.bin
 cd ..
 
 cd kl25z128
+md5sum *.bin
+cd ..
+
+cd kl25z128-ra
 md5sum *.bin
 cd ..
 
@@ -30,11 +38,19 @@ cd lm4f120
 md5sum *.bin
 cd ..
 
+cd lm4f120-ra
+md5sum *.bin
+cd ..
+
 cd lm4f232
 md5sum *.bin
 cd ..
 
 cd tm4c1294
+md5sum *.bin
+cd ..
+
+cd tm4c1294-ra
 md5sum *.bin
 cd ..
 
@@ -87,5 +103,9 @@ md5sum *.bin
 cd ..
 
 cd linux
+md5sum mecrisp-stellaris-linux
+cd ..
+
+cd linux-ra
 md5sum mecrisp-stellaris-linux
 cd ..

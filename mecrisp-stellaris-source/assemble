@@ -4,12 +4,20 @@ cd lpc1114fn28
 make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../lpc1114fn28 && cp *.hex ../../lpc1114fn28
 cd ..
 
+cd lpc1114fn28-ra
+make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../lpc1114fn28-ra && cp *.hex ../../lpc1114fn28-ra
+cd ..
+
 cd lpc1115fbd48
 make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../lpc1115fbd48 && cp *.hex ../../lpc1115fbd48
 cd ..
 
 cd kl25z128
 make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../kl25z128 && cp *.srec ../../kl25z128
+cd ..
+
+cd kl25z128-ra
+make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../kl25z128-ra && cp *.srec ../../kl25z128
 cd ..
 
 cd mk20dx256
@@ -28,12 +36,20 @@ cd lm4f120
 make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../lm4f120
 cd ..
 
+cd lm4f120-ra
+make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../lm4f120-ra
+cd ..
+
 cd lm4f232
 make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../lm4f232
 cd ..
 
 cd tm4c1294
 make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../tm4c1294
+cd ..
+
+cd tm4c1294-ra
+make clean all && ls -l *.bin && md5sum *.bin && cp *.bin ../../tm4c1294-ra
 cd ..
 
 cd stm32f030f4
@@ -138,7 +154,14 @@ cd ..
 
 # Special target for running on ARM Linux and Android:
 
-cd mecrisp-stellaris-source/linux
+cd mecrisp-stellaris-source
+
+cd linux
 ./assemble
 cp mecrisp-stellaris-linux ../../linux
+cd ..
+
+cd linux-ra
+./assemble
+cp mecrisp-stellaris-linux ../../linux-ra
 cd ..
