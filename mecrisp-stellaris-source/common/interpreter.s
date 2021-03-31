@@ -629,7 +629,7 @@ quit_innenschleife:  @ Main loop of Forth system.
 
   ldr r1, =Backlinkgrenze
   cmp r0, r1
-.ifdef ram_above
+.ifdef above_ram
   blo.n 1f
 .else
   bhs.n 1f

@@ -587,7 +587,7 @@ dodoes:
 
     ldr r0, =Backlinkgrenze
     cmp r3, r0
-.ifdef ram_above
+.ifdef above_ram
     blo.n dodoes_ram
 .else
     bhs.n dodoes_ram
@@ -608,7 +608,7 @@ dodoes_ram:
 
     ldr r0, =Backlinkgrenze
     cmp r3, r0
-.ifdef ram_above
+.ifdef above_ram
     blo.n dodoes_ram
 .else
     bhs.n dodoes_ram
@@ -661,7 +661,7 @@ builds: @ Beginnt ein Defining-Wort.  Start a defining definition.
 
     ldr r2, =Backlinkgrenze
     cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
     blo.n builds_ram
 .else
     bhs.n builds_ram
@@ -692,7 +692,7 @@ builds_ram:
 
     ldr r2, =Backlinkgrenze
     cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
     blo.n builds_ram
 .else
     bhs.n builds_ram

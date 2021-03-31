@@ -31,7 +31,7 @@ smudge:
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
   blo.n smudge_ram
 .else
   bhs.n smudge_ram @ Befinde mich im Ram. Schalte um !
@@ -118,7 +118,7 @@ setflags_intern:
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
   blo.n setflags_ram @ Befinde mich im Ram. Schalte um !
 .else
   bhs.n setflags_ram @ Befinde mich im Ram. Schalte um !
@@ -276,7 +276,7 @@ ckomma:  @ Fügt 8 Bits an das Dictionary an.
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
   blo.n ckomma_ram @ Befinde mich im Ram. Schalte um !
 .else
   bhs.n ckomma_ram @ Befinde mich im Ram. Schalte um !
@@ -324,7 +324,7 @@ hkomma: @ Fügt 16 Bits an das Dictionary an.
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
   blo.n hkomma_ram @ Befinde mich im Ram. Schalte um !
 .else
   bhs.n hkomma_ram @ Befinde mich im Ram. Schalte um !
@@ -445,7 +445,7 @@ allot:  @ Überprüft auch gleich, ob ich mich noch im Ram befinde.
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
   blo.n allot_ram @ Befinde mich im Ram. Schalte um !
 .else
   bhs.n allot_ram @ Befinde mich im Ram. Schalte um !
@@ -512,7 +512,7 @@ allot_ok: @ Alles paletti, es ist noch Platz da !  Everything is fine, just allo
 
   ldr r1, =Backlinkgrenze
   cmp r0, r1
-.ifdef ram_above
+.ifdef above_ram
   bhs.n 1f @ Befinde mich im Flash --> False
 .else
   blo.n 1f @ Befinde mich im Flash --> False
@@ -530,7 +530,7 @@ compiletoram:
 
   ldr r1, =Backlinkgrenze
   cmp r0, r1
-.ifdef ram_above
+.ifdef above_ram
   bhs.n Zweitpointertausch @ Befinde mich im Flash. Schalte um !
 .else
   blo.n Zweitpointertausch @ Befinde mich im Flash. Schalte um !
@@ -547,7 +547,7 @@ compiletoflash:
 
   ldr r1, =Backlinkgrenze
   cmp r0, r1
-.ifdef ram_above
+.ifdef above_ram
   blo.n Zweitpointertausch @ Befinde mich im Ram. Schalte um !
 .else
   bhs.n Zweitpointertausch @ Befinde mich im Ram. Schalte um !
@@ -646,7 +646,7 @@ create: @ Nimmt das nächste Token aus dem Puffer,
 
   ldr r1, =Backlinkgrenze
   cmp r0, r1
-.ifdef ram_above
+.ifdef above_ram
   blo.n create_ram @ Befinde mich im Ram. Schalte um !
 .else
   bhs.n create_ram @ Befinde mich im Ram. Schalte um !
@@ -772,7 +772,7 @@ nvariable: @ Creates an initialised variable of given length.
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
   blo.n variable_ram @ Befinde mich im Ram. Schalte um !
 .else
   bhs.n variable_ram @ Befinde mich im Ram. Schalte um !
@@ -871,7 +871,7 @@ finish_var_buf_ram: @ Finished.
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
   blo.n rambuffer_ram @ Befinde mich im Ram. Schalte um !
 .else
   bhs.n rambuffer_ram @ Befinde mich im Ram. Schalte um !
@@ -967,7 +967,7 @@ dictionarystart: @ ( -- Startadresse des aktuellen Dictionaryfadens )
   ldr r1, =Backlinkgrenze
   pushdatos
   cmp r0, r1
-.ifdef ram_above
+.ifdef above_ram
   blo 1f
 .else
   bhs 1f
@@ -1157,7 +1157,7 @@ find: @ ( address length -- Code-Adresse Flags )
       @ Prüfe, ob ich mich im Flash oder im Ram befinde.  Check if in RAM or in Flash.
       ldr r0, =Backlinkgrenze
       cmp tos, r0
-.ifdef ram_above
+.ifdef above_ram
       blo 3f @ Im Ram beim ersten Treffer ausspringen. Search is over in RAM with first hit.
 .else
       bhs 3f @ Im Ram beim ersten Treffer ausspringen. Search is over in RAM with first hit.

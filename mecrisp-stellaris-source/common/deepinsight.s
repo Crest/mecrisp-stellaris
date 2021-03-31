@@ -318,7 +318,7 @@ unused:
 
   ldr r2, =Backlinkgrenze
   cmp r1, r2
-.ifdef ram_above
+.ifdef above_ram
   blo.n unused_ram
 .else
   bhs.n unused_ram
