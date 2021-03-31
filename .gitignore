@@ -1,0 +1,10 @@
+.DS_Store
+upload.fs
+*.lst
+*.o
+*.elf
+.*.swp
+*.bin
+*.hex
+*.list
+*.srec
