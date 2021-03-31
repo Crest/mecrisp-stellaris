@@ -580,6 +580,12 @@ Zweitpointertausch:
   ldr r0, [r0]
   cmp r3, r0
   blo 1f
+.ifdef above_ram
+  @ Falls der Flash über dem RAM liegt wird immer ein DictionaryPointer über dem VariablenPointer sein.
+  @ If the flash is above the RAM one of the dictionary pointers will always be above than the VariablePointer.
+  cmp r2, r0
+  blo 1f
+.endif
    push {lr}
    writeln " Variables collide with dictionary"
    pop {pc}
