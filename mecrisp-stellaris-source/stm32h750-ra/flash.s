@@ -728,6 +728,7 @@ erase:
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "erase-chip" @ ( -- )
 @ -----------------------------------------------------------------------------
+@ The chip erase command doesn't take an address parameter.
 erase_chip:
 
     push {lr}
@@ -758,7 +759,7 @@ erase_chip:
     movw r1, #(SPI1_CR1_CSTART | SPI1_CR1_SPE)
     str  r1, [r0, #(SPI1_CR1 - SPI1_BASE)]
     
-    @ Enqueue the write enable command
+    @ Enqueue the erase chip command
     movs r1, 0xc7
     strb r1, [r0, #(SPI1_TXDR - SPI1_BASE)]
     
@@ -768,7 +769,7 @@ erase_chip:
     beq  1b
     ldrb r1, [r0, #(SPI1_RXDR - SPI1_BASE)]
 
-    bl spi_wait
+    bl   spi_wait
 
     pop  {pc}
 
