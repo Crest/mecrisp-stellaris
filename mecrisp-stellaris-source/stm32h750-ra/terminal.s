@@ -63,6 +63,7 @@
 
 .include "cache.s"
 .include "led.s"
+.include "button.s"
 .include "clock.s"
  
 @ -----------------------------------------------------------------------------
