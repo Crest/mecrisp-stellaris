@@ -125,7 +125,12 @@ Handover:
     cmp   r0, r1
     bne   2b
 
-    push  {psp}
+    bl    button2_nostack
+    cmp   tos, #0
+    mov   r12, tos
+    bne   4f
+
+    @ Initialize the data stack because spi-move takes its arguments from the data stack
     ldr   psp, =datenstackanfang
 
     @ Load the AXI SRAM from SPI flash
@@ -135,17 +140,21 @@ Handover:
     stmdb psp!, {tos}
     mov   tos, #(FlashDictionaryEnde - FlashDictionaryAnfang)
     bl    spi_move
-    pop   {psp}
 
-    @ Catch the pointers for Flash dictionary
+4:  @ Catch the pointers for Flash dictionary
     .include "../common/catchflashpointers.s"
 
     @ Initialize the console
-    bl uart_init
+    bl    uart_init
 
     welcome " for STM32H750 by Matthias Koch"
+    cmp   r12, #0
+    beq   5f
+    write "Erasing external SPI flash... "
+    bl    erase_chip
+    writeln "DONE!"
 
-    @ Ready to fly !
+5:  @ Ready to fly !
     .include "../common/boot.s"
 
 .p2align 2, 0xff
