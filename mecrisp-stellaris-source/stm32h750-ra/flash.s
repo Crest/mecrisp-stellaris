@@ -474,6 +474,7 @@ spi_move:
     pop   {pc}                  @
 
 
+
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "hflash!" @ ( x Addr -- )
 @ -----------------------------------------------------------------------------
@@ -491,7 +492,13 @@ h_flashkomma:
     mov   r2, tos
     ldmia psp!, {r3, tos}
     strh  r3, [r2]
-    @rev16 r3, r3
+
+    @ Clean data cache, invalidate instruction cache
+    ldr  r1, =DCCMVAU
+    dmb
+    str  r2, [r1]
+    ldr  r1, =ICIMVAU
+    str  r2, [r1]
 
     @ Merge the 24 bit address and 0x02 (program page) command into a 32 bit big endian command 
     bic   r2, #0xff000000
@@ -556,6 +563,13 @@ c_flashkomma:
     mov   r2, tos
     ldmia psp!, {r3, tos}
     strb  r3, [r2]
+
+    @ Clean data cache, invalidate instruction cache
+    ldr  r1, =DCCMVAU
+    dmb
+    str  r2, [r1]
+    ldr  r1, =ICIMVAU
+    str  r2, [r1]
 
     @ Merge the 24 bit address and 0x02 (program page) command into a 32 bit big endian command 
     bic   r2, #0xff000000
