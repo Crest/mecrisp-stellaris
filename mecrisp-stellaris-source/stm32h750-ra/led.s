@@ -76,17 +76,3 @@ led_write:
     drop
     
     bx   lr
-
-@ -----------------------------------------------------------------------------
-  Wortbirne Flag_visible, "init-button" @ ( -- )
-@ -----------------------------------------------------------------------------
-init_button:
-    @ Enable GPIOE
-    ldr r0, =RCC_AHB4ENR
-    ldr r1, [r0]
-    orr r1, #RCC_AHB4ENR_GPIOCEN
-    str r1, [r0]
-    
-    bx  lr
-
-.ltorg
