@@ -112,6 +112,7 @@ Handover:
     bl    hse_on
     bl    pll_400mhz
     bl    init_led
+    bl    init_button
     bl    init_spi
     bl    init_crc
     
