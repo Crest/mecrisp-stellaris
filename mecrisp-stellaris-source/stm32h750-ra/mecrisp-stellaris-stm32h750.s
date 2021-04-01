@@ -76,7 +76,7 @@ Reset_ITCM: @ Einsprung zu Beginn
 @ -----------------------------------------------------------------------------
 
     @ Enable the data and instruction caches first to speed up the bootstrap.
-    @bl    enable_caches         @ Have the cache prefetch from internal flash
+    bl    enable_caches         @ Have the cache prefetch from internal flash
 
     @ To maximize performance this Mecrisp Stellaris port copies
     @ the kernel from internal flash to ITCM.
