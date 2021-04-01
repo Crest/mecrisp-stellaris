@@ -142,7 +142,7 @@ Handover:
     @ Initialize the console
     bl uart_init
 
-    welcome " for STM32H750 Nucleo by Matthias Koch, Jan Bramkamp"
+    welcome " for STM32H750 by Matthias Koch"
 
     @ Ready to fly !
     .include "../common/boot.s"
