@@ -196,23 +196,22 @@ backup_base:
     orr r1, #RCC_AHB4ENR_BKPRAMEN
     str r1, [r0]
 
+    @ Allow writes to the backup SRAM (and its registers)
+    ldr r0, =PWR_CR1
+    ldr r1, [r0]
+    orr r1, #PWR_CR1_DBP
+    str r1, [r0]
+
     @ Run backup SRAM from battery
     ldr r0, =PWR_CR2
     ldr r1, [r0]
     orr r1, #PWR_CR2_BREN
     str r1, [r0]
-    @dmb
 
     @ Wait for the backup power regulator to turn on
 1:  ldr r1, [r0]
     tst r1, #PWR_CR2_BRRDY    
     beq 1b
-
-    @ Allow writes to the backup SRAM
-    ldr r0, =PWR_CR1    
-    ldr r1, [r0]
-    orr r1, #PWR_CR1_DBP
-    str r1, [r0] 
 
     bx  lr
 
