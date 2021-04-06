@@ -115,8 +115,8 @@ init_spi:
     @ Load SPI1 base address
     ldr  r1, =SPI1_BASE
 
-    @ Configure SPI baud rate (200MHz/32)
-    ldr  r2, =(0b100 << SPI1_CFG1_MBR_Shift) | (0b00111 << SPI1_CFG1_CRCSIZE_Shift) | (0b00111 << SPI1_CFG1_DSIZE_Shift)
+    @ Configure SPI baud rate (200MHz/4 = 50MHz)
+    ldr  r2, =(0b001 << SPI1_CFG1_MBR_Shift) | (0b00111 << SPI1_CFG1_CRCSIZE_Shift) | (0b00111 << SPI1_CFG1_DSIZE_Shift)
     str  r2, [r1, #(SPI1_CFG1 - SPI1_BASE)]
     
     @ Configure SPI as master
