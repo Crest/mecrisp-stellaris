@@ -115,8 +115,8 @@ init_spi:
     @ Load SPI1 base address
     ldr  r1, =SPI1_BASE
 
-    @ Configure SPI baud rate (200MHz/32)
-    ldr  r2, =(0b100 << SPI1_CFG1_MBR_Shift) | (0b00111 << SPI1_CFG1_CRCSIZE_Shift) | (0b00111 << SPI1_CFG1_DSIZE_Shift)
+    @ Configure SPI baud rate (200MHz/4 = 50MHz) at this rate a 512kiB flash dictionary can be read less than 64ms
+    ldr  r2, =(0b001 << SPI1_CFG1_MBR_Shift) | (0b00111 << SPI1_CFG1_CRCSIZE_Shift) | (0b00111 << SPI1_CFG1_DSIZE_Shift)
     str  r2, [r1, #(SPI1_CFG1 - SPI1_BASE)]
     
     @ Configure SPI as master
@@ -354,9 +354,9 @@ spi_read:
     @ Load spi-addr and ram-addr
     ldm  psp!, {r1, r2}
     
-    @ Merge the 24 bit address and 0x03 (read) into a 32 bit big endian command 
+    @ Merge the 24 bit address and 0x0b (read fast) into a 32 bit big endian command 
     bic  r2, #0xff000000
-    add  r2, #0x03000000
+    add  r2, #0x0b000000
     rev  r2, r2
     
     @ Disable SPI
@@ -364,9 +364,9 @@ spi_read:
     str  r3, [r0, #(SPI1_CR1 - SPI1_BASE)]
 
     @ Set length
-    adds tos, #4
+    adds tos, #5
     str  tos, [r0, #(SPI1_CR2 - SPI1_BASE)]
-    subs tos, #4
+    subs tos, #5
 
     @ Clear TXTFC and EOT
     movs r3, #(SPI1_IFCR_TXTFC | SPI1_IFCR_EOTC)
@@ -382,6 +382,7 @@ spi_read:
 
     @ Send the read command
     str  r2, [r0, #(SPI1_TXDR - SPI1_BASE)]
+    strb r2, [r0, #(SPI1_TXDR - SPI1_BASE)]
 
     @ The SPI flash doesn't reply anything useful to the command
     @ and address bytes. Ignore those four bytes as soon as they're available.
@@ -390,7 +391,12 @@ spi_read:
     tst  r3, #SPI1_SR_RXWNE
     beq  1b
     ldr  r3, [r0, #(SPI1_RXDR - SPI1_BASE)]
-    
+
+1:  ldr  r3, [r0, #(SPI1_SR - SPI1_BASE)]
+    tst  r3, #(1 << SPI1_SR_RXPLVL_Shift)
+    beq  1b
+    ldrb r3, [r0, #(SPI1_RXDR - SPI1_BASE)]
+
     @ Maintain separate transmit and receive counters
     movs r2, tos
 
@@ -442,7 +448,7 @@ spi_move:
 
     @ Load the maximum payload size per read operation.
     @ The four bytes for the command and address have to be substracted from the 0xffff transfer size limit
-    movw  r3, #0xfffb           @ r0 = len, r1 = ram, r2 = spi, r3 = max, r6 = len  ( spi ram len spi ram len )
+    movw  r3, #0x00fb           @ r0 = len, r1 = ram, r2 = spi, r3 = max, r6 = len  ( spi ram len spi ram len )
     
     @ Limit the payload size
 1:  cmp   r6, r3                @ r0 = len, r1 = ram, r2 = spi, r3 = max, r6 = len  ( spi ram len spi ram len )
@@ -454,7 +460,7 @@ spi_move:
     
     @ Advance the posititions and decrease the remaining length
     @ The call to spi_read has invalidated r0-r3.
-    movw  r3, #0xfffb           @                               r3 = max, r6 = len  ( spi ram len )
+    movw  r3, #0x00fb           @                               r3 = max, r6 = len  ( spi ram len )
     ldmia psp!, {r1, r2}        @           r1 = ram, r2 = spi, r3 = max, r6 = len  ( len )
     adds  r1, r3                @           r1 = ram, r2 = spi, r3 = max, r6 = len  ( len )
     adds  r2, r3                @           r1 = ram, r2 = spi, r3 = max, r6 = len  ( len )
