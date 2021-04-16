@@ -104,7 +104,7 @@ Reset_ITCM: @ Einsprung zu Beginn
     @ pointing to the copy in ITCM. Let's hope there are no
     @ interrupts before the code is copied. Now that everything
     @ has been copied we can use the vector table in the ITCM.
-    ldr   r0, =0xE000ED08 @ relocate interrupt vector table
+    ldr   r0, =SCB_VTOR   @ relocate interrupt vector table
     movs  r1, #0
     str   r1, [r0]
     dsb
