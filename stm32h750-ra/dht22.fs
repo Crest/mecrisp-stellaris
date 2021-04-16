@@ -1,5 +1,5 @@
 3 bit constant GPIODEN
-12 constant dht22-pin
+12    constant dht22-pin
 false variable dht22-valid
 -1    variable dht22-sample
 
@@ -31,4 +31,4 @@ false variable dht22-valid
 
 : init ( -- ) init-cycles init-dht22 ;
 init
-dht22-read drop dht22.
+\ dht22-read drop dht22.

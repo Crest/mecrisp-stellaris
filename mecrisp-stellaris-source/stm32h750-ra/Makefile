@@ -13,6 +13,8 @@ SRCS += ../../stm32h750-ra/rcc.fs
 SRCS += ../../stm32h750-ra/gpio.fs
 SRCS += ../../common/disassembler-m3.txt
 SRCS += ../../stm32h750-ra/spi.fs
+SRCS += ../../common/cycles.txt
+SRCS += ../../stm32h750-ra/dht22.fs
 
 all : $(PROJECT).bin $(PROJECT).hex
 
