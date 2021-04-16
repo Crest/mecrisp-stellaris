@@ -44,17 +44,24 @@
 @ -----------------------------------------------------------------------------
 
 @ Konstanten für die Größe des Ram-Speichers
-
 .equ RamAnfang, 0x20000000 @ Start of DTCM Porting: Change this !
 .equ RamEnde,   0x20020000 @ End   of DTCM. 128 kiB. Porting: Change this !
 
-@.equ RamAnfang, 0x24040000  @ Treat the whole 512kiB AXI SRAM as flash
-@.equ RamEnde,   0x24080000  @ End   of DTCM. 128 kiB. Porting: Change this !
 @ Konstanten für die Größe und Aufteilung des Flash-Speichers
+@ Der interne Flash ist für Forth kaum zu gebrauchen, weil er nur einen
+@ Löschsektor hat. Deswegen wird das Flash Dictionary aus einem externen
+@ SPI Flash Chip geladen.
+@ The internal code flash is unusable for forth because it has a single damn
+@ erase sector. This port uses an external SPI flash to hold the flash
+@ dictionary.
+.equ ITCMAnfang,            0x00000000 @ The bootcode copies the kernel
+.equ ITCMEnde,              0x00010000 @ into the ITCM.
+.equ FlashAnfang,           0x08000000 @ Internal code flash
+.equ FlashEnde,             0x08020000 @ (contains the kernel)
+.equ FlashDictionaryAnfang, 0x24000000 @ Treat the whole 512kiB AXI SRAM
+.equ FlashDictionaryEnde,   0x24080000 @ fake "flash"
 
-.equ FlashDictionaryAnfang, 0x24000000  @ Treat the whole 512kiB AXI SRAM as flash
-.equ FlashDictionaryEnde,   0x24080000  @ 
-
+@ Das AXI SRAM liegt über dem DTCM
 .equ Backlinkgrenze,        FlashDictionaryAnfang   @ Ab dem Ram-Start.
 
 
@@ -62,6 +69,7 @@
 @ Anfang im Flash - Interruptvektortabelle ganz zu Beginn
 @ Flash start - Vector table has to be placed here
 @ -----------------------------------------------------------------------------
+KernelAnfang:
 .text    @ Hier beginnt das Vergnügen mit der Stackadresse und der Einsprungadresse
 .include "vectors.s" @ You have to change vectors for Porting !
 
@@ -73,7 +81,7 @@
 
 @ -----------------------------------------------------------------------------
 Reset_ITCM: @ Einsprung zu Beginn
-.equ Reset, Reset_ITCM+0x08000000
+.equ Reset, Reset_ITCM - KernelAnfang + FlashAnfang
 @ -----------------------------------------------------------------------------
 
     @ Enable the data and instruction caches first to speed up the bootstrap.
@@ -81,10 +89,10 @@ Reset_ITCM: @ Einsprung zu Beginn
 
     @ To maximize performance this Mecrisp Stellaris port copies
     @ the kernel from internal flash to ITCM.
-    movs  r0, #0x08000000       @ r0 = start of flash
-    movs  r1, #0                @ r1 = start of ITCM
-    ldr   r2, =end_of_kernel    @ r2 = size of ITCM
-1:  ldmia r0!, {r3}             @ TODO: copy less, copy faster
+    movs  r0, #FlashAnfang         @ r0 = start of flash
+    movs  r1, #KernelAnfang        @ r1 = start of ITCM
+    movw  r2, #:lower16:KernelEnde @ r2 = size of kernel (< size of ITCM)
+1:  ldmia r0!, {r3}                @ TODO: copy faster
     stmia r1!, {r3}
     cmp   r1, r2
     bne   1b
@@ -159,4 +167,4 @@ Handover:
     .include "../common/boot.s"
 
 .p2align 2, 0xff
-end_of_kernel:
+KernelEnde:
