@@ -56,10 +56,13 @@
 @ dictionary.
 .equ ITCMAnfang,            0x00000000 @ The bootcode copies the kernel
 .equ ITCMEnde,              0x00010000 @ into the ITCM.
+.equ AXIRAMAnfang,          0x24000000 @ Main SRAM of the STM32H750
+.equ AXIRAMEnde,            0x24080000 @
 .equ FlashAnfang,           0x08000000 @ Internal code flash
 .equ FlashEnde,             0x08020000 @ (contains the kernel)
-.equ FlashDictionaryAnfang, 0x24000000 @ Treat the whole 512kiB AXI SRAM
-.equ FlashDictionaryEnde,   0x24080000 @ fake "flash"
+.equ KernelHash,            0x24000000 @ Store a SHA2 hash of the kernel
+.equ FlashDictionaryAnfang, 0x24000020 @
+.equ FlashDictionaryEnde,   0x24080000 @
 
 @ Das AXI SRAM liegt über dem DTCM
 .equ Backlinkgrenze,        FlashDictionaryAnfang   @ Ab dem Ram-Start.
@@ -127,7 +130,7 @@ Handover:
 
     @ Wipe the AXI SRAM
     ldr   r0, =FlashDictionaryAnfang
-    add   r1, r0, #(FlashDictionaryEnde - FlashDictionaryAnfang)
+    ldr   r1, =FlashDictionaryEnde
     mov   r2, #0xffffffff
     movs  r3, r2
 2:  stmia r0!, {r2, r3}
@@ -145,9 +148,9 @@ Handover:
     @ Load the AXI SRAM from SPI flash
     movs  tos, #0
     stmdb psp!, {tos}
-    mov   tos, #FlashDictionaryAnfang
+    ldr   tos, =FlashDictionaryAnfang
     stmdb psp!, {tos}
-    mov   tos, #(FlashDictionaryEnde - FlashDictionaryAnfang)
+    ldr   tos, =(FlashDictionaryEnde - FlashDictionaryAnfang)
     bl    spi_move
 
 4:  @ Catch the pointers for Flash dictionary
