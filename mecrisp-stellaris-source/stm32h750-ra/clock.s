@@ -96,16 +96,18 @@ pll_400mhz:
     tst r1, #RCC_CR_PLL1RDY
     beq 1b
 
-    @ It's important to enable the clock divider before switching
+    @ It's important to enable the clock dividers before switching
     @ to the 400MHz PLL clock source
     @
-    @ D1CPRE = 1 (400MHz = 400MHz/1)
-    @ HPRE   = 2 (200MHz = 400MHz/2)
-    @ D1PPRE = 1 (200MHz = 200MHz/1)
-    @ D2PPRE = 1 (200MHz = 200MHz/1)
-    @ D3PPRE = 1 (200MHz = 200MHz/1)
-    ldr r1, =(0b1000 << RCC_D1CFGR_HPRE_Shift)
+    @ CPU = 400MHz
+    @ AHB = 200MHz
+    @ APB = 100MHz
+    mov r1, #(0b0000 << RCC_D1CFGR_D1CPRE_Shift) | (0b100 << RCC_D1CFGR_D1PPRE_Shift) | (0b1000 << RCC_D1CFGR_HPRE_Shift)
     str r1, [r0, #(RCC_D1CFGR - RCC_BASE)]
+    mov r1, #(0b100 << RCC_D2CFGR_D2PPRE2_Shift) | (0b100 << RCC_D2CFGR_D2PPRE1_Shift)
+    str r1, [r0, #(RCC_D2CFGR - RCC_BASE)]
+    mov r1, #(0b100 << RCC_D3CFGR_D3PPRE_Shift)
+    str r1, [r0, #(RCC_D3CFGR - RCC_BASE)]
 
     @ Switch system clock from HSI to PLL1
     ldr r1, [r0, #(RCC_CFGR - RCC_BASE)]
