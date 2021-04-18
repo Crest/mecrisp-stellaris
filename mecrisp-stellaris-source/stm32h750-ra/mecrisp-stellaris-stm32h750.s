@@ -169,5 +169,5 @@ Handover:
 5:  @ Ready to fly !
     .include "../common/boot.s"
 
-.p2align 2, 0xff
+.p2align 6, 0xff
 KernelEnde:
