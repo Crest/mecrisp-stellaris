@@ -61,7 +61,7 @@
 .equ FlashAnfang,           0x08000000 @ Internal code flash
 .equ FlashEnde,             0x08020000 @ (contains the kernel)
 .equ KernelHash,            0x24000000 @ Store a SHA2 hash of the kernel
-.equ FlashDictionaryAnfang, 0x24000020 @
+.equ FlashDictionaryAnfang, 0x24000000 @
 .equ FlashDictionaryEnde,   0x24080000 @
 
 @ Das AXI SRAM liegt über dem DTCM
