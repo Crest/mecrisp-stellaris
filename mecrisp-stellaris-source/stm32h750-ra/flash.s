@@ -442,7 +442,7 @@ spi_move:
 
     @ Load the maximum payload size per read operation.
     @ The four bytes for the command and address have to be substracted from the 0xffff transfer size limit
-    movw  r3, #0xfffb           @ r0 = len, r1 = ram, r2 = spi, r3 = max, r6 = len  ( spi ram len spi ram len )
+    movw  r3, #0x0ffb           @ r0 = len, r1 = ram, r2 = spi, r3 = max, r6 = len  ( spi ram len spi ram len )
     
     @ Limit the payload size
 1:  cmp   r6, r3                @ r0 = len, r1 = ram, r2 = spi, r3 = max, r6 = len  ( spi ram len spi ram len )
@@ -454,7 +454,7 @@ spi_move:
     
     @ Advance the posititions and decrease the remaining length
     @ The call to spi_read has invalidated r0-r3.
-    movw  r3, #0xfffb           @                               r3 = max, r6 = len  ( spi ram len )
+    movw  r3, #0x0ffb           @                               r3 = max, r6 = len  ( spi ram len )
     ldmia psp!, {r1, r2}        @           r1 = ram, r2 = spi, r3 = max, r6 = len  ( len )
     adds  r1, r3                @           r1 = ram, r2 = spi, r3 = max, r6 = len  ( len )
     adds  r2, r3                @           r1 = ram, r2 = spi, r3 = max, r6 = len  ( len )
