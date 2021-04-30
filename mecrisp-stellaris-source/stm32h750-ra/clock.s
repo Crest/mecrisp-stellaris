@@ -46,72 +46,80 @@ hse_on:
 
     bx  lr
 
+.equ RCC_PLLCKSELR_PLLSRC_Shift, 0
+.equ RCC_PLLCKSELR_PLLSRC_Width, 2
+.equ RCC_PLLCKSELR_PLLSRC_HSE  , 0b10
+
+.equ RCC_PLLCKSELR_DIVM1_Shift , 4
+.equ RCC_PLLCKSELR_DIVM1_Width , 6
+.equ RCC_PLLCKSELR_DIVM1_Div4  , 4
+
+@ Write out the dividers and multiplier
+.equ RCC_PLL1DIVR_DIVR1_Div2  , ((  2 - 1) << RCC_PLL1DIVR_DIVR1_Shift)
+.equ RCC_PLL1DIVR_DIVQ1_Div2  , ((  2 - 1) << RCC_PLL1DIVR_DIVQ1_Shift)
+.equ RCC_PLL1DIVR_DIVP1_Div2  , ((  2 - 1) << RCC_PLL1DIVR_DIVP1_Shift)
+.equ RCC_PLL1DIVR_DIVN1_Mul400, ((400 - 1) << RCC_PLL1DIVR_DIVN1_Shift)
+.equ RCC_PLL1DIVR_Value       , (RCC_PLL1DIVR_DIVR1_Div2 | RCC_PLL1DIVR_DIVQ1_Div2 | RCC_PLL1DIVR_DIVP1_Div2 | RCC_PLL1DIVR_DIVN1_Mul400)
+
 @ -----------------------------------------------------------------------------
   Wortbirne Flag_visible, "pll-400MHz" @ ( -- )
 @ -----------------------------------------------------------------------------
 pll_400mhz:
+    @ This function configures PLL1 in integer mode as described in Figure 48
+    @ on page 346 of RM0433 Rev 7:
+    @   * Pick the PLL source
+    @   * Set the PLL pre-divder
+    @   * Configure parameters (input range, output range, dividers, multiplier)
+    @   * Enable the PLL
+    @   * Wait for its readiness
+
     @ Keep the RCC_BASE around
-    ldr r0, =RCC_BASE
+    ldr  r0, =RCC_BASE
 
-    @ Select 8MHz HSE as PLL source
-    ldr r1, [r0, #(RCC_PLLCKSELR - RCC_BASE)]
-    bic r1, #(0b01 << RCC_PLLCKSELR_PLLSRC_Shift)
-    orr r1, #(0b10 << RCC_PLLCKSELR_PLLSRC_Shift)
-    str r1, [r0, #(RCC_PLLCKSELR - RCC_BASE)]
+    @ Select 8MHz the HSE clock as PLL source
+    ldr  r1, [r0, #(RCC_PLLCKSELR - RCC_BASE)]
+    orr  r1, #RCC_PLLCKSELR_PLLSRC_HSE
     
-    @ Divide the HSE by 8 to get ref1_ck = 1MHz
-    and r1, #((((1 << 6) - 1) & ~8) << RCC_PLLCKSELR_DIVM1_Shift)
-    orr r1, #(8 << RCC_PLLCKSELR_DIVM1_Shift)
-    str r1, [r0, #(RCC_PLLCKSELR - RCC_BASE)]
+    @ Divide the HSE by 4 to get ref1_ck = 2MHz
+    movs r2, #RCC_PLLCKSELR_DIVM1_Div4
+    bfi  r1, r2, #RCC_PLLCKSELR_DIVM1_Shift, #RCC_PLLCKSELR_DIVM1_Width
+    str  r1, [r0, #(RCC_PLLCKSELR - RCC_BASE)]
 
-    @ PLL1 config (RCC_PLLCFGR)
-    @ - DIVR1EN    = 1
-    @ - DIVQ1EN    = 1
-    @ - DIVP1EN    = 1
-    @ - PLL1RGE    = 0b11 (8..16 MHz)
-    @ - PLL1VCOSEL = 0 (Wide Range)
-    @ - PLL1FRACEN = 0 (Integer)
-    ldr r1, [r0, #(RCC_CFGR - RCC_BASE)]
-    orr r1, #(RCC_PLLCFGR_DIVR1EN | RCC_PLLCFGR_DIVQ1EN | RCC_PLLCFGR_DIVP1EN)
-    orr r1, #(0b11 << RCC_PLLCFGR_PLL1RGE_Shift)
-    bic r1, #(RCC_PLLCFGR_PLL1FRACEN | RCC_PLLCFGR_PLL1VCOSEL)
-    str r1, [r0, #(RCC_CFGR - RCC_BASE)]
+    @ Configure PLL1 for a reference clock between 2MHz and 4MHz
+    ldr  r1, [r0, #(RCC_CFGR - RCC_BASE)]
+    orr  r1, #(0b01 << RCC_PLLCFGR_PLL1RGE_Shift)
+    str  r1, [r0, #(RCC_CFGR - RCC_BASE)]
     
-    @ Init PLLx dividers (RCC_PLL1DIVR)
-    @ - DIVN1 = 339 (vco1_ck   = ref1_ck * (399 + 1) = 400MHz)
-    @ - DIVP1 =   0 (pll1_p_ck = vco1_ck/1           = 400MHz)
-    @ - DIVQ1 =   1 (pll1_q_ck = vco1_ck/2           = 200MHz)
-    @ - DIVR1 =   0 (pll1_r_ck = vco1_ck/1           = 400MHz)
-    ldr r1, =((1<<RCC_PLL1DIVR_DIVQ1_Shift)|(339<<RCC_PLL1DIVR_DIVN1_Shift))
-    str r1, [r0, #(RCC_PLL1DIVR - RCC_BASE)]
+    @ Multiply the 2MHz reference clock by 400 and divide by two
+    ldr  r1, =RCC_PLL1DIVR_Value
+    str  r1, [r0, #(RCC_PLL1DIVR - RCC_BASE)]
     
-    @ Enable PLL1 (RCC_CR)
-    @ - PLL1ON = 1
-    ldr r1, [r0, #(RCC_CR - RCC_BASE)]
-    orr r1, #RCC_CR_PLL1ON
-    str r1, [r0, #(RCC_CR - RCC_BASE)]
+    @ Enable PLL1 (PLL1ON = 1)
+    ldr  r1, [r0, #(RCC_CR - RCC_BASE)]
+    orr  r1, #RCC_CR_PLL1ON
+    str  r1, [r0, #(RCC_CR - RCC_BASE)]
     
     @ Wait for PLL1 to become usable (PLL1RDY = 1)
-1:  ldr r1, [r0, #(RCC_CR - RCC_BASE)]
-    tst r1, #RCC_CR_PLL1RDY
-    beq 1b
+1:  ldr  r1, [r0, #(RCC_CR - RCC_BASE)]
+    tst  r1, #RCC_CR_PLL1RDY
+    beq  1b
 
     @ It's important to enable the clock dividers before switching
-    @ to the 400MHz PLL clock source
-    @
-    @ CPU = 400MHz
-    @ AHB = 200MHz
-    @ APB = 100MHz
-    mov r1, #(0b0000 << RCC_D1CFGR_D1CPRE_Shift) | (0b100 << RCC_D1CFGR_D1PPRE_Shift) | (0b1000 << RCC_D1CFGR_HPRE_Shift)
-    str r1, [r0, #(RCC_D1CFGR - RCC_BASE)]
-    mov r1, #(0b100 << RCC_D2CFGR_D2PPRE2_Shift) | (0b100 << RCC_D2CFGR_D2PPRE1_Shift)
-    str r1, [r0, #(RCC_D2CFGR - RCC_BASE)]
-    mov r1, #(0b100 << RCC_D3CFGR_D3PPRE_Shift)
-    str r1, [r0, #(RCC_D3CFGR - RCC_BASE)]
+    @ to the 400MHz PLL clock source.
+    @ Run the chip at its maximum clock rates for VOS1:
+    @   * CPU: 400MHz
+    @   * AHB: 200MHz
+    @   * APB: 100MHz
+    mov  r1, #(0b0000 << RCC_D1CFGR_D1CPRE_Shift) | (0b100 << RCC_D1CFGR_D1PPRE_Shift) | (0b1000 << RCC_D1CFGR_HPRE_Shift)
+    str  r1, [r0, #(RCC_D1CFGR - RCC_BASE)]
+    mov  r1, #(0b100 << RCC_D2CFGR_D2PPRE2_Shift) | (0b100 << RCC_D2CFGR_D2PPRE1_Shift)
+    str  r1, [r0, #(RCC_D2CFGR - RCC_BASE)]
+    mov  r1, #(0b100 << RCC_D3CFGR_D3PPRE_Shift)
+    str  r1, [r0, #(RCC_D3CFGR - RCC_BASE)]
 
     @ Switch system clock from HSI to PLL1
-    ldr r1, [r0, #(RCC_CFGR - RCC_BASE)]
-    orr r1, #(0b11 << RCC_CFGR_SW_Shift)
-    str r1, [r0, #(RCC_CFGR - RCC_BASE)]
+    ldr  r1, [r0, #(RCC_CFGR - RCC_BASE)]
+    orr  r1, #(0b11 << RCC_CFGR_SW_Shift)
+    str  r1, [r0, #(RCC_CFGR - RCC_BASE)]
 
-    bx  lr
+    bx   lr
